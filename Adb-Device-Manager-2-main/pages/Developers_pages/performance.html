@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Improvements — ADB Device Manager</title>
+    <link rel="icon" type="image/x-icon" href="../../images/app_icon_100.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../head.css">
+    <style>
+        /* ============================================================
+           Performance page — self-contained styles on top of head.css
+           ============================================================ */
+
+        :root {
+            --bg-page: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #161e2e;
+            --border: rgba(255,255,255,0.08);
+            --text-main: #e5e7eb;
+            --text-muted: #6b7280;
+            --text-dim: #9ca3af;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        body { background: var(--bg-page); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; }
+
+        /* ---- Page layout ---- */
+        .perf-container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+        /* ---- Breadcrumb nav ---- */
+        .page-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(17,24,39,0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .back-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); border-radius: 8px; padding: 0.4rem 0.8rem;
+            font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-main); }
+        .crumb-root { color: var(--text-muted); font-size: 0.82rem; }
+        .crumb-sep { color: var(--text-muted); margin: 0 0.25rem; }
+        .crumb-current { color: var(--text-main); font-size: 0.82rem; font-weight: 600; }
+
+        /* ---- Hero ---- */
+        .hero {
+            padding: 3.5rem 0 2.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+        .hero-eyebrow {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3);
+            color: #a78bfa; border-radius: 20px; padding: 0.25rem 0.85rem;
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+            text-transform: uppercase; margin-bottom: 1.25rem;
+        }
+        .hero h1 { font-size: 2.4rem; font-weight: 800; margin: 0 0 0.75rem; letter-spacing: -0.03em; line-height: 1.15; }
+        .hero h1 span { color: #8b5cf6; }
+        .hero p { font-size: 1rem; color: var(--text-dim); max-width: 620px; line-height: 1.7; margin: 0 0 1.5rem; }
+        .pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .pill {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.78rem; color: var(--text-dim);
+        }
+
+        /* ---- Section ---- */
+        .section { margin-bottom: 3.5rem; }
+        .section-label {
+            display: flex; align-items: center; gap: 0.6rem;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-muted); margin-bottom: 1.25rem;
+        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* ---- Improvement cards ---- */
+        .improvement-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden; margin-bottom: 1.5rem;
+            transition: border-color 0.2s;
+        }
+        .improvement-card:hover { border-color: rgba(255,255,255,0.14); }
+
+        .card-head {
+            display: flex; align-items: flex-start; gap: 1rem;
+            padding: 1.4rem 1.5rem; border-bottom: 1px solid var(--border);
+        }
+        .card-icon {
+            width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+        .icon-green { background: rgba(16,185,129,0.12); }
+        .icon-amber { background: rgba(245,158,11,0.12); }
+        .icon-blue  { background: rgba(59,130,246,0.12); }
+        .icon-purple{ background: rgba(139,92,246,0.12); }
+        .icon-red   { background: rgba(239,68,68,0.12); }
+
+        .card-title-block { flex: 1; }
+        .card-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 0.25rem; }
+        .card-subtitle { font-size: 0.82rem; color: var(--text-muted); }
+
+        .severity-badge {
+            font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.6rem;
+            border-radius: 6px; text-transform: uppercase; letter-spacing: 0.06em;
+            white-space: nowrap; align-self: flex-start;
+        }
+        .sev-high   { background: rgba(239,68,68,0.15);   color: #f87171; }
+        .sev-medium { background: rgba(245,158,11,0.15);   color: #fbbf24; }
+        .sev-low    { background: rgba(16,185,129,0.12);   color: #34d399; }
+
+        .card-body { padding: 1.4rem 1.5rem; }
+        .card-body p { font-size: 0.9rem; color: var(--text-dim); line-height: 1.7; margin: 0 0 1.2rem; }
+        .card-body p:last-child { margin-bottom: 0; }
+
+        /* ---- Problem / Solution split ---- */
+        .prob-sol {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        @media (max-width: 600px) { .prob-sol { grid-template-columns: 1fr; } }
+        .prob-box, .sol-box {
+            border-radius: 10px; padding: 1rem 1.1rem; font-size: 0.84rem; line-height: 1.6;
+        }
+        .prob-box { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; }
+        .sol-box  { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2); color: #6ee7b7; }
+        .prob-box strong, .sol-box strong { display: block; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 0.4rem; opacity: 0.7; }
+
+        /* ---- Code blocks ---- */
+        pre {
+            background: #0d1117; border: 1px solid var(--border); border-radius: 10px;
+            padding: 1rem 1.2rem; overflow-x: auto; font-family: var(--font-mono);
+            font-size: 0.78rem; line-height: 1.65; color: #c9d1d9; margin: 0 0 1.1rem;
+        }
+        pre:last-child { margin-bottom: 0; }
+        .cm  { color: #6e7681; }  /* comment */
+        .kw  { color: #ff7b72; }  /* keyword */
+        .fn  { color: #d2a8ff; }  /* function */
+        .st  { color: #a5d6ff; }  /* string */
+        .nu  { color: #79c0ff; }  /* number */
+        .tp  { color: #ffa657; }  /* type */
+
+        /* ---- Impact table ---- */
+        .impact-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-bottom: 1rem; }
+        .impact-table th {
+            text-align: left; padding: 0.6rem 1rem; font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+        .impact-table td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-dim); }
+        .impact-table tr:last-child td { border-bottom: none; }
+        .impact-table tr:hover td { background: rgba(255,255,255,0.025); }
+
+        /* ---- Callout boxes ---- */
+        .callout {
+            display: flex; gap: 0.8rem; align-items: flex-start;
+            padding: 1rem 1.1rem; border-radius: 10px; font-size: 0.87rem; line-height: 1.6;
+            margin-bottom: 1.1rem;
+        }
+        .callout-tip  { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); color: #93c5fd; }
+        .callout-warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+        .callout svg  { flex-shrink: 0; margin-top: 2px; }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <header class="page-nav">
+        <button class="back-btn" onclick="window.location.href='../Developers.html'" title="Return to Hub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>Developers Hub</span>
+        </button>
+        <div>
+            <span class="crumb-root">Contribution Notes</span>
+            <span class="crumb-sep">/</span>
+            <span class="crumb-current">Performance Improvements</span>
+        </div>
+    </header>
+
+    <div class="perf-container">
+
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-eyebrow">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Contribution Proposal
+            </div>
+            <h1>Performance <span>Improvement</span> Roadmap</h1>
+            <p>
+                Six concrete improvements to reduce latency, eliminate boot delays, and shrink network payload
+                size — each traced to a specific bottleneck in the current architecture.
+            </p>
+            <div class="pills">
+                <span class="pill">Boot Speed</span>
+                <span class="pill">Network Efficiency</span>
+                <span class="pill">Data Loading</span>
+                <span class="pill">Memory</span>
+                <span class="pill">Dart / Kotlin</span>
+            </div>
+        </div>
+
+        <!-- Impact Summary -->
+        <div class="section">
+            <div class="section-label">Impact Summary</div>
+            <table class="impact-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Improvement</th>
+                        <th>Affects</th>
+                        <th>Expected Gain</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>JAR hash caching</td>
+                        <td>Boot speed</td>
+                        <td>3–10s faster connect</td>
+                        <td><span class="severity-badge sev-high">High</span></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Parallel boot steps</td>
+                        <td>Boot speed</td>
+                        <td>~2s faster connect</td>
+                        <td><span class="severity-badge sev-high">High</span></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Paginated REST endpoints</td>
+                        <td>Contacts / Calls / SMS</td>
+                        <td>First render &lt;500ms</td>
+                        <td><span class="severity-badge sev-high">High</span></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Binary image endpoints</td>
+                        <td>All image transfers</td>
+                        <td>33% less bandwidth</td>
+                        <td><span class="severity-badge sev-medium">Medium</span></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>JAR command batching</td>
+                        <td>Volume / Screen / App launch</td>
+                        <td>Removes per-command latency</td>
+                        <td><span class="severity-badge sev-medium">Medium</span></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Shared call_manager socket</td>
+                        <td>Multi-device memory</td>
+                        <td>Fewer system processes</td>
+                        <td><span class="severity-badge sev-low">Low</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 1 — JAR HASH CACHING -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 1 — Boot Speed</div>
+
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-green">⚡</div>
+                    <div class="card-title-block">
+                        <div class="card-title">JAR Hash Caching — Skip Redundant Pushes</div>
+                        <div class="card-subtitle">Windows side · Dart · Boot flow (step 0.38)</div>
+                    </div>
+                    <span class="severity-badge sev-high">High</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            Every boot runs <code>adb push</code> to copy the Logic Engine JAR to
+                            <code>/data/local/tmp/</code> on the device — even when the JAR hasn't changed.
+                            This is the single slowest step (3–10s on WiFi).
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Before pushing, run <code>adb shell md5sum</code> on the remote file and compare it to
+                            the local JAR's MD5. Only push if they differ.
+                            Cache the last-pushed hash in a local file to skip the remote check entirely on
+                            subsequent identical launches.
+                        </div>
+                    </div>
+                    <p>Implementation in Dart (Windows side, boot flow):</p>
+<pre><span class="cm">// boot_manager.dart</span>
+
+<span class="kw">Future</span>&lt;<span class="tp">bool</span>&gt; <span class="fn">shouldPushJar</span>(<span class="tp">String</span> localJarPath, <span class="tp">String</span> deviceJarPath) <span class="kw">async</span> {
+  <span class="cm">// 1. Hash the local JAR</span>
+  <span class="kw">final</span> localBytes = <span class="kw">await</span> <span class="tp">File</span>(localJarPath).readAsBytes();
+  <span class="kw">final</span> localMd5 = md5.convert(localBytes).toString();
+
+  <span class="cm">// 2. Check cached hash from last push (no ADB call needed)</span>
+  <span class="kw">final</span> cacheFile = <span class="tp">File</span>(<span class="st">'jar_hash.cache'</span>);
+  <span class="kw">if</span> (<span class="kw">await</span> cacheFile.exists()) {
+    <span class="kw">final</span> cachedHash = <span class="kw">await</span> cacheFile.readAsString();
+    <span class="kw">if</span> (cachedHash.trim() == localMd5) <span class="kw">return false</span>; <span class="cm">// skip push ✓</span>
+  }
+
+  <span class="cm">// 3. Fallback: check on-device hash via ADB</span>
+  <span class="kw">final</span> result = <span class="kw">await</span> <span class="fn">runAdb</span>([<span class="st">'shell'</span>, <span class="st">'md5sum'</span>, deviceJarPath]);
+  <span class="kw">final</span> deviceMd5 = result.stdout.split(<span class="st">' '</span>).first.trim();
+
+  <span class="kw">if</span> (deviceMd5 == localMd5) {
+    <span class="kw">await</span> cacheFile.writeAsString(localMd5); <span class="cm">// update cache</span>
+    <span class="kw">return false</span>;
+  }
+  <span class="kw">return true</span>; <span class="cm">// JAR changed — push required</span>
+}
+
+<span class="cm">// In boot sequence:</span>
+<span class="kw">if</span> (<span class="kw">await</span> <span class="fn">shouldPushJar</span>(localPath, remotePath)) {
+  <span class="kw">await</span> <span class="fn">runAdb</span>([<span class="st">'push'</span>, localPath, remotePath]);
+  <span class="kw">await</span> cacheFile.writeAsString(localMd5);
+}</pre>
+
+                    <div class="callout callout-tip">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                        <span>The cache file should be invalidated if the app version changes. Tie it to the app's build number or the JAR file's modification timestamp.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 2 — PARALLEL BOOT -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 2 — Boot Speed</div>
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-green">🚀</div>
+                    <div class="card-title-block">
+                        <div class="card-title">Parallel Boot Steps — Concurrent Package Check &amp; JAR Push</div>
+                        <div class="card-subtitle">Windows side · Dart · Boot flow (steps 0.38 &amp; 0.55)</div>
+                    </div>
+                    <span class="severity-badge sev-high">High</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            The boot sequence is fully sequential: the app waits for <code>adb push</code> to
+                            finish before even checking if the companion APK is installed
+                            (<code>pm list packages</code>). These two operations are independent.
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Run the JAR push and APK package check concurrently using
+                            <code>Future.wait()</code>. Both results are needed before step 5
+                            (<code>am start</code>), but they have no dependency on each other.
+                        </div>
+                    </div>
+<pre><span class="cm">// Current (sequential) — total time = pushTime + checkTime</span>
+<span class="kw">await</span> <span class="fn">pushJarToDevice</span>();           <span class="cm">// ~5s on WiFi</span>
+<span class="kw">await</span> <span class="fn">checkCompanionApkInstalled</span>(); <span class="cm">// ~1s</span>
+<span class="kw">await</span> <span class="fn">startServerService</span>();
+
+<span class="cm">// Improved (parallel) — total time = max(pushTime, checkTime)</span>
+<span class="kw">final</span> results = <span class="kw">await</span> Future.wait([
+  <span class="fn">pushJarIfNeeded</span>(),           <span class="cm">// ~5s (or 0s with hash cache)</span>
+  <span class="fn">checkCompanionApkInstalled</span>(), <span class="cm">// ~1s, runs concurrently</span>
+]);
+<span class="kw">final</span> apkInstalled = results[<span class="nu">1</span>] <span class="kw">as</span> <span class="tp">bool</span>;
+<span class="kw">if</span> (!apkInstalled) <span class="kw">await</span> <span class="fn">installCompanionApk</span>();
+<span class="kw">await</span> <span class="fn">startServerService</span>();</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 3 — PAGINATED REST -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 3 — Data Loading</div>
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-amber">📋</div>
+                    <div class="card-title-block">
+                        <div class="card-title">Paginated REST Endpoints — Contacts, Calls &amp; SMS</div>
+                        <div class="card-subtitle">Android side · Kotlin · HTTP endpoints on port 4567</div>
+                    </div>
+                    <span class="severity-badge sev-high">High</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            <code>GET /contacts/get_all</code>, <code>/call_settings/get_all_calls</code>,
+                            and <code>/sms_settings/get_all_sms</code> return the entire dataset in
+                            a single response — including Base64 contact photos. A phone with 1,000
+                            contacts can return several MB, blocking the UI until fully parsed.
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Add <code>offset</code> + <code>limit</code> query parameters. Return the first
+                            page immediately (fast first render), then fetch subsequent pages as
+                            the user scrolls. Separate photo loading from metadata loading.
+                        </div>
+                    </div>
+
+                    <p><strong>Android side</strong> — update the Ktor/NanoHTTPD route handler:</p>
+<pre><span class="cm">// Kotlin — contacts endpoint (Android, port 4567)</span>
+<span class="kw">get</span>(<span class="st">"/contacts/get_all"</span>) {
+    <span class="kw">val</span> offset = call.request.queryParameters[<span class="st">"offset"</span>]?.toIntOrNull() ?: <span class="nu">0</span>
+    <span class="kw">val</span> limit  = call.request.queryParameters[<span class="st">"limit"</span>]?.toIntOrNull()  ?: <span class="nu">50</span>
+    <span class="kw">val</span> includePhotos = call.request.queryParameters[<span class="st">"photos"</span>] != <span class="st">"false"</span>
+
+    <span class="kw">val</span> contacts = contactRepo
+        .getAll()
+        .drop(offset)
+        .take(limit)
+        .map { c ->
+            <span class="kw">if</span> (!includePhotos) c.copy(photoBase64 = <span class="kw">null</span>)
+            <span class="kw">else</span> c
+        }
+
+    call.respond(mapOf(
+        <span class="st">"status"</span> to <span class="st">"success"</span>,
+        <span class="st">"total"</span>  to contactRepo.count(),
+        <span class="st">"offset"</span> to offset,
+        <span class="st">"limit"</span>  to limit,
+        <span class="st">"contacts"</span> to contacts
+    ))
+}</pre>
+
+                    <p><strong>Windows side</strong> — fetch metadata first, then photos lazily:</p>
+<pre><span class="cm">// Dart — ContactsService</span>
+<span class="kw">Future</span>&lt;<span class="tp">void</span>&gt; <span class="fn">loadContacts</span>() <span class="kw">async</span> {
+  <span class="cm">// 1. Load first page without photos — instant first render</span>
+  <span class="kw">final</span> page1 = <span class="kw">await</span> <span class="fn">fetchContacts</span>(offset: <span class="nu">0</span>, limit: <span class="nu">50</span>, photos: <span class="kw">false</span>);
+  setState(() => contacts = page1.contacts);
+
+  <span class="cm">// 2. Load remaining pages in background</span>
+  <span class="kw">int</span> offset = <span class="nu">50</span>;
+  <span class="kw">while</span> (offset &lt; page1.total) {
+    <span class="kw">final</span> page = <span class="kw">await</span> <span class="fn">fetchContacts</span>(offset: offset, limit: <span class="nu">50</span>, photos: <span class="kw">false</span>);
+    setState(() => contacts.addAll(page.contacts));
+    offset += <span class="nu">50</span>;
+  }
+
+  <span class="cm">// 3. Lazy-load photos only for visible contacts</span>
+  <span class="fn">loadPhotosForVisible</span>(visibleRange);
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 4 — BINARY IMAGE ENDPOINTS -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 4 — Network Efficiency</div>
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-blue">🖼️</div>
+                    <div class="card-title-block">
+                        <div class="card-title">Binary Image Endpoints — Eliminate Base64 Overhead</div>
+                        <div class="card-subtitle">Android side · Kotlin + Windows side · Dart</div>
+                    </div>
+                    <span class="severity-badge sev-medium">Medium</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            Every image (wallpaper, contact photos, Google profile picture) is encoded as
+                            Base64 inside JSON responses. Base64 inflates binary size by ~33% and requires
+                            a CPU decode step on both sides on every transfer.
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Add dedicated binary endpoints that return <code>image/jpeg</code> directly.
+                            This removes the encode/decode overhead entirely and makes responses compatible
+                            with standard HTTP image caching.
+                        </div>
+                    </div>
+
+<pre><span class="cm">// Kotlin — new binary photo endpoint</span>
+<span class="kw">get</span>(<span class="st">"/contacts/photo/{id}"</span>) {
+    <span class="kw">val</span> contactId = call.parameters[<span class="st">"id"</span>]?.toLongOrNull()
+        ?: <span class="kw">return</span>@get call.respond(HttpStatusCode.BadRequest)
+
+    <span class="kw">val</span> photoBytes = contactRepo.getPhotoBytes(contactId)
+        ?: <span class="kw">return</span>@get call.respond(HttpStatusCode.NotFound)
+
+    call.respondBytes(photoBytes, ContentType.Image.JPEG)
+    <span class="cm">// No Base64. No JSON wrapper. Raw JPEG bytes.</span>
+}
+
+<span class="cm">// Similarly for wallpaper:</span>
+<span class="kw">get</span>(<span class="st">"/device/wallpaper"</span>) {
+    <span class="kw">val</span> bmp = WallpaperManager.getInstance(context).drawable
+    <span class="kw">val</span> baos = ByteArrayOutputStream()
+    (bmp <span class="kw">as</span> BitmapDrawable).bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, <span class="nu">80</span>, baos)
+    call.respondBytes(baos.toByteArray(), ContentType(<span class="st">"image"</span>, <span class="st">"webp"</span>))
+}</pre>
+                    <div class="callout callout-tip">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                        <span>Use <code>WEBP_LOSSY</code> at quality 75–80 for wallpapers. WebP saves another 25–35% over JPEG with no perceptible quality loss.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 5 — JAR COMMAND BATCHING -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 5 — Control Latency</div>
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-purple">⚡</div>
+                    <div class="card-title-block">
+                        <div class="card-title">JAR TCP Command Batching — Merge Rapid Commands</div>
+                        <div class="card-subtitle">Windows side · Dart · AdbTcpServer / Logic Engine TCP</div>
+                    </div>
+                    <span class="severity-badge sev-medium">Medium</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            Each command to the Logic Engine (JAR) — volume up, screen toggle, app launch —
+                            is a separate TCP round-trip over ADB. Rapid actions (e.g. holding a volume key)
+                            generate dozens of individual requests per second, each paying the full ADB tunnel
+                            latency cost.
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Buffer commands in a debounce queue on the Dart side. Flush as a batch every
+                            16ms (one frame). The JAR processes them sequentially, but the network sees
+                            one packet instead of many.
+                        </div>
+                    </div>
+
+<pre><span class="cm">// Dart — command batcher</span>
+<span class="kw">class</span> <span class="tp">JarCommandBatcher</span> {
+  <span class="kw">final</span> _queue = &lt;<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="kw">dynamic</span>&gt;&gt;[];
+  <span class="tp">Timer</span>? _flushTimer;
+
+  <span class="kw">void</span> <span class="fn">send</span>(<span class="tp">String</span> command, [<span class="tp">Map</span>? params]) {
+    _queue.add({<span class="st">'cmd'</span>: command, ...?params});
+    _flushTimer ??= <span class="tp">Timer</span>(<span class="kw">const</span> <span class="tp">Duration</span>(milliseconds: <span class="nu">16</span>), _flush);
+  }
+
+  <span class="kw">void</span> <span class="fn">_flush</span>() {
+    <span class="kw">if</span> (_queue.isEmpty) <span class="kw">return</span>;
+    <span class="cm">// Send all queued commands as a single JSON array over TCP</span>
+    jarTcpSocket.write(<span class="fn">jsonEncode</span>({
+      <span class="st">'type'</span>: <span class="st">'batch'</span>,
+      <span class="st">'commands'</span>: List.from(_queue),
+    }));
+    _queue.clear();
+    _flushTimer = <span class="kw">null</span>;
+  }
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- IMPROVEMENT 6 — SHARED CALL MANAGER -->
+        <!-- ============================================================ -->
+        <div class="section">
+            <div class="section-label">Improvement 6 — Memory Efficiency</div>
+            <div class="improvement-card">
+                <div class="card-head">
+                    <div class="card-icon icon-red">🔗</div>
+                    <div class="card-title-block">
+                        <div class="card-title">Shared Call Manager Socket — Reduce Process Count</div>
+                        <div class="card-subtitle">Windows side · Dart · Call Manager 1 architecture</div>
+                    </div>
+                    <span class="severity-badge sev-low">Low</span>
+                </div>
+                <div class="card-body">
+                    <div class="prob-sol">
+                        <div class="prob-box">
+                            <strong>Problem</strong>
+                            Call Manager 1 spawns a new <code>call_manager.exe</code> child process
+                            for each connected device IP. With 3+ devices, this creates 3+ system-level
+                            processes, each holding their own sockets and memory. Windows process
+                            overhead is significant (~30MB+ per process).
+                        </div>
+                        <div class="sol-box">
+                            <strong>Solution</strong>
+                            Run a single multiplexed call manager process. Route by device IP internally
+                            using a <code>Map&lt;String, CallSession&gt;</code>. Only the session lookup
+                            is per-IP — the socket server and process are shared.
+                        </div>
+                    </div>
+
+<pre><span class="cm">// Dart — single shared call manager with IP-keyed sessions</span>
+<span class="kw">class</span> <span class="tp">SharedCallManager</span> {
+  <span class="kw">final</span> _sessions = &lt;<span class="tp">String</span>, <span class="tp">CallSession</span>&gt;{}; <span class="cm">// keyed by device IP</span>
+
+  <span class="kw">void</span> <span class="fn">onCallEvent</span>(<span class="tp">String</span> deviceIp, <span class="tp">Map</span> event) {
+    <span class="kw">final</span> session = _sessions.putIfAbsent(
+      deviceIp,
+      () => <span class="tp">CallSession</span>(ip: deviceIp),
+    );
+    session.<span class="fn">handleEvent</span>(event);
+  }
+
+  <span class="kw">void</span> <span class="fn">onDeviceDisconnected</span>(<span class="tp">String</span> deviceIp) {
+    _sessions.remove(deviceIp)?.<span class="fn">dispose</span>();
+  }
+}
+<span class="cm">// One global instance instead of one process per device.</span></pre>
+
+                    <div class="callout callout-warn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span>This is a larger refactor since <code>call_manager.exe</code> is a compiled separate binary. Consider this for a future major version; the other improvements are lower-risk and higher-yield.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommended order -->
+        <div class="section">
+            <div class="section-label">Recommended Implementation Order</div>
+            <div class="improvement-card">
+                <div class="card-body">
+                    <p>
+                        For maximum user-visible impact with minimum risk, implement in this order:
+                    </p>
+                    <table class="impact-table">
+                        <thead>
+                            <tr><th>Order</th><th>Task</th><th>Risk</th><th>Where to edit</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1st</td>
+                                <td>JAR hash caching</td>
+                                <td>Low — additive only</td>
+                                <td>Dart Windows boot manager</td>
+                            </tr>
+                            <tr>
+                                <td>2nd</td>
+                                <td>Parallel boot steps</td>
+                                <td>Low — <code>Future.wait</code> wrapper</td>
+                                <td>Dart Windows boot manager</td>
+                            </tr>
+                            <tr>
+                                <td>3rd</td>
+                                <td>Paginated contacts/calls/SMS</td>
+                                <td>Medium — API + UI changes</td>
+                                <td>Kotlin Android server + Dart Flutter UI</td>
+                            </tr>
+                            <tr>
+                                <td>4th</td>
+                                <td>Binary image endpoints</td>
+                                <td>Medium — new endpoint alongside old</td>
+                                <td>Kotlin Android server + Dart HTTP client</td>
+                            </tr>
+                            <tr>
+                                <td>5th</td>
+                                <td>Command batching</td>
+                                <td>Low — Dart only, wraps existing send</td>
+                                <td>Dart Windows TCP client</td>
+                            </tr>
+                            <tr>
+                                <td>6th</td>
+                                <td>Shared call manager</td>
+                                <td>High — architecture change</td>
+                                <td>call_manager binary + Dart orchestrator</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
