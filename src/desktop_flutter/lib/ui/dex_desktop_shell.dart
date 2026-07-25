@@ -1,0 +1,1273 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../models/device_state.dart';
+import '../services/app_launcher_service.dart';
+import '../services/mirror_service.dart';
+import '../services/real_adb_sync_service.dart';
+import 'app_drawer_dialog.dart';
+import 'battery_popover.dart';
+import 'file_manager_dialog.dart';
+import 'notification_flyout.dart';
+import 'quick_settings_popover.dart';
+import 'smart_app_icon_widget.dart';
+import 'smart_taskbar_popover_button.dart';
+import 'sms_dialog.dart';
+import 'unified_phone_dialog.dart';
+
+import 'desktop_window_widget.dart';
+
+enum TaskbarPopoverType { none, notifications, battery, settings }
+
+enum WindowSnapZone {
+  none,
+  leftHalf,
+  rightHalf,
+  topMaximize,
+  topLeftQuarter,
+  topRightQuarter,
+  bottomLeftQuarter,
+  bottomRightQuarter,
+}
+
+class DesktopWindowData {
+  final String id;
+  final String title;
+  final IconData icon;
+  final Color themeColor;
+  final Widget content;
+  Offset position;
+  Size size;
+  Size? preMaximizedSize;
+  Offset? preMaximizedPosition;
+  bool isMinimized;
+  bool isMaximized;
+  int zIndex;
+
+  DesktopWindowData({
+    required this.id,
+    required this.title,
+    required this.icon,
+    required this.themeColor,
+    required this.content,
+    required this.position,
+    required this.size,
+    this.isMinimized = false,
+    this.isMaximized = false,
+    this.zIndex = 0,
+  });
+}
+
+class DexDesktopShell extends StatefulWidget {
+  final DeviceState deviceState;
+  final VoidCallback onStartBoot;
+
+  const DexDesktopShell({
+    super.key,
+    required this.deviceState,
+    required this.onStartBoot,
+  });
+
+  @override
+  State<DexDesktopShell> createState() => _DexDesktopShellState();
+}
+
+class _DexDesktopShellState extends State<DexDesktopShell> {
+  late Timer _clockTimer;
+  DateTime _now = DateTime.now();
+  bool _isPlaying = false;
+  TaskbarPopoverType _activePopover = TaskbarPopoverType.none;
+
+  // Desktop Windowing State
+  final List<DesktopWindowData> _openWindows = [];
+  int _highestZIndex = 0;
+
+  // Intelligent Window Snapping State
+  WindowSnapZone _activeSnapZone = WindowSnapZone.none;
+
+  WindowSnapZone _detectSnapZone(Offset globalPos, Size screenSize) {
+    const double edgeThreshold = 28.0;
+    const double cornerThreshold = 48.0;
+    final double workHeight = screenSize.height - 75;
+    final double workWidth = screenSize.width;
+
+    // Corner Snapping Check
+    if (globalPos.dx <= cornerThreshold && globalPos.dy <= cornerThreshold) {
+      return WindowSnapZone.topLeftQuarter;
+    }
+    if (globalPos.dx >= workWidth - cornerThreshold &&
+        globalPos.dy <= cornerThreshold) {
+      return WindowSnapZone.topRightQuarter;
+    }
+    if (globalPos.dx <= cornerThreshold &&
+        globalPos.dy >= workHeight - cornerThreshold) {
+      return WindowSnapZone.bottomLeftQuarter;
+    }
+    if (globalPos.dx >= workWidth - cornerThreshold &&
+        globalPos.dy >= workHeight - cornerThreshold) {
+      return WindowSnapZone.bottomRightQuarter;
+    }
+
+    // Edge Snapping Check
+    if (globalPos.dx <= edgeThreshold) {
+      return WindowSnapZone.leftHalf;
+    }
+    if (globalPos.dx >= workWidth - edgeThreshold) {
+      return WindowSnapZone.rightHalf;
+    }
+    if (globalPos.dy <= edgeThreshold) {
+      return WindowSnapZone.topMaximize;
+    }
+
+    return WindowSnapZone.none;
+  }
+
+  Rect? _getSnapTargetRect(WindowSnapZone zone, Size screenSize) {
+    final double workHeight = screenSize.height - 75;
+    final double workWidth = screenSize.width;
+
+    switch (zone) {
+      case WindowSnapZone.leftHalf:
+        return Rect.fromLTWH(0, 0, workWidth / 2, workHeight);
+      case WindowSnapZone.rightHalf:
+        return Rect.fromLTWH(workWidth / 2, 0, workWidth / 2, workHeight);
+      case WindowSnapZone.topMaximize:
+        return Rect.fromLTWH(0, 0, workWidth, workHeight);
+      case WindowSnapZone.topLeftQuarter:
+        return Rect.fromLTWH(0, 0, workWidth / 2, workHeight / 2);
+      case WindowSnapZone.topRightQuarter:
+        return Rect.fromLTWH(workWidth / 2, 0, workWidth / 2, workHeight / 2);
+      case WindowSnapZone.bottomLeftQuarter:
+        return Rect.fromLTWH(0, workHeight / 2, workWidth / 2, workHeight / 2);
+      case WindowSnapZone.bottomRightQuarter:
+        return Rect.fromLTWH(
+            workWidth / 2, workHeight / 2, workWidth / 2, workHeight / 2);
+      case WindowSnapZone.none:
+        return null;
+    }
+  }
+
+  String _getSnapLabel(WindowSnapZone zone) {
+    switch (zone) {
+      case WindowSnapZone.leftHalf:
+        return "Snap Left (50%)";
+      case WindowSnapZone.rightHalf:
+        return "Snap Right (50%)";
+      case WindowSnapZone.topMaximize:
+        return "Maximize Window";
+      case WindowSnapZone.topLeftQuarter:
+        return "Snap Top-Left (25%)";
+      case WindowSnapZone.topRightQuarter:
+        return "Snap Top-Right (25%)";
+      case WindowSnapZone.bottomLeftQuarter:
+        return "Snap Bottom-Left (25%)";
+      case WindowSnapZone.bottomRightQuarter:
+        return "Snap Bottom-Right (25%)";
+      case WindowSnapZone.none:
+        return "";
+    }
+  }
+
+  void _handleWindowDrag(
+      DesktopWindowData win, Offset delta, Offset globalPos, Size screenSize) {
+    setState(() {
+      if (win.isMaximized) {
+        win.isMaximized = false;
+        if (win.preMaximizedSize != null) {
+          win.size = win.preMaximizedSize!;
+        }
+      }
+
+      win.position += delta;
+      _activeSnapZone = _detectSnapZone(globalPos, screenSize);
+    });
+  }
+
+  void _handleWindowDragEnd(
+      DesktopWindowData win, Offset globalPos, Size screenSize) {
+    final snapZone = _activeSnapZone;
+    setState(() {
+      _activeSnapZone = WindowSnapZone.none;
+
+      if (snapZone == WindowSnapZone.topMaximize) {
+        _maximizeWindow(win.id);
+      } else if (snapZone != WindowSnapZone.none) {
+        final targetRect = _getSnapTargetRect(snapZone, screenSize);
+        if (targetRect != null) {
+          win.preMaximizedPosition = win.position;
+          win.preMaximizedSize = win.size;
+          win.position = targetRect.topLeft;
+          win.size = targetRect.size;
+        }
+      }
+    });
+  }
+
+  // Real-Time Connection Toast State
+  String? _connectionToastMessage;
+  bool _isConnectionToastError = false;
+  bool _lastConnectedState = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+
+    _lastConnectedState = widget.deviceState.isAdbConnected.value;
+    widget.deviceState.isAdbConnected.addListener(_onDeviceConnectionChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.deviceState.isAdbConnected.removeListener(_onDeviceConnectionChanged);
+    _clockTimer.cancel();
+    super.dispose();
+  }
+
+  void _onDeviceConnectionChanged() {
+    final isConn = widget.deviceState.isAdbConnected.value;
+    if (_lastConnectedState != isConn) {
+      _lastConnectedState = isConn;
+      final devName = widget.deviceState.deviceName.value;
+
+      setState(() {
+        if (!isConn) {
+          _connectionToastMessage = "⚠️ Device Disconnected: $devName";
+          _isConnectionToastError = true;
+        } else {
+          _connectionToastMessage = "✓ Device Connected: $devName";
+          _isConnectionToastError = false;
+        }
+      });
+
+      if (isConn) {
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted && widget.deviceState.isAdbConnected.value) {
+            setState(() => _connectionToastMessage = null);
+          }
+        });
+      }
+    }
+  }
+
+  void _togglePopover(TaskbarPopoverType type) {
+    setState(() {
+      if (_activePopover == type) {
+        _activePopover = TaskbarPopoverType.none;
+      } else {
+        _activePopover = type;
+      }
+    });
+  }
+
+  void openDesktopWindow({
+    required String id,
+    required String title,
+    required IconData icon,
+    required Color themeColor,
+    required Widget content,
+    Size defaultSize = const Size(820, 580),
+  }) {
+    final existingIndex = _openWindows.indexWhere((w) => w.id == id);
+    if (existingIndex != -1) {
+      final win = _openWindows[existingIndex];
+      win.isMinimized = false;
+      win.zIndex = ++_highestZIndex;
+      setState(() {});
+    } else {
+      final double offset = (_openWindows.length * 30.0) % 180;
+      final newWin = DesktopWindowData(
+        id: id,
+        title: title,
+        icon: icon,
+        themeColor: themeColor,
+        content: content,
+        position: Offset(100 + offset, 50 + offset),
+        size: defaultSize,
+        zIndex: ++_highestZIndex,
+      );
+      _openWindows.add(newWin);
+      setState(() {});
+    }
+  }
+
+  void _closeWindow(String id) {
+    if (id.startsWith('app_')) {
+      final pkg = id.substring(4);
+      MirrorService.stopAppMirror(pkg);
+    }
+    setState(() {
+      _openWindows.removeWhere((w) => w.id == id);
+    });
+  }
+
+  void _minimizeWindow(String id) {
+    final win = _openWindows.firstWhere((w) => w.id == id);
+    setState(() {
+      win.isMinimized = true;
+    });
+  }
+
+  void _maximizeWindow(String id) {
+    final win = _openWindows.firstWhere((w) => w.id == id);
+    setState(() {
+      if (win.isMaximized) {
+        win.isMaximized = false;
+        if (win.preMaximizedSize != null) {
+          win.size = win.preMaximizedSize!;
+        }
+        if (win.preMaximizedPosition != null) {
+          win.position = win.preMaximizedPosition!;
+        }
+      } else {
+        win.preMaximizedPosition = win.position;
+        win.preMaximizedSize = win.size;
+        win.isMaximized = true;
+        win.position = Offset.zero;
+      }
+    });
+  }
+
+  void _focusWindow(String id) {
+    final win = _openWindows.firstWhere((w) => w.id == id);
+    if (win.zIndex < _highestZIndex) {
+      setState(() {
+        win.zIndex = ++_highestZIndex;
+      });
+    }
+  }
+
+  void _toggleWindowFromTaskbar(String id, VoidCallback launchCallback) {
+    final existing = _openWindows.where((w) => w.id == id).firstOrNull;
+    if (existing != null) {
+      if (existing.isMinimized) {
+        setState(() {
+          existing.isMinimized = false;
+          existing.zIndex = ++_highestZIndex;
+        });
+      } else if (existing.zIndex == _highestZIndex) {
+        setState(() {
+          existing.isMinimized = true;
+        });
+      } else {
+        _focusWindow(id);
+      }
+    } else {
+      launchCallback();
+    }
+  }
+
+  void _showAppDrawer(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AppDrawerDialog(
+        deviceState: widget.deviceState,
+        onStartBoot: widget.onStartBoot,
+      ),
+    );
+  }
+
+  void _showSms(BuildContext context) {
+    openDesktopWindow(
+      id: 'sms',
+      title: 'Live SMS',
+      icon: Icons.message_rounded,
+      themeColor: const Color(0xFF00BFA5),
+      content: const SmsDialog(isWindow: true),
+      defaultSize: const Size(640, 580),
+    );
+  }
+
+  void _showFileManager(BuildContext context) {
+    openDesktopWindow(
+      id: 'file_manager',
+      title: 'File Explorer',
+      icon: Icons.folder_special_rounded,
+      themeColor: const Color(0xFF00BFA5),
+      content: const FileManagerDialog(isWindow: true),
+      defaultSize: const Size(980, 620),
+    );
+  }
+
+  void _showPhone(BuildContext context, {int initialSubTab = 0}) {
+    openDesktopWindow(
+      id: 'phone',
+      title: 'Phone & Calls',
+      icon: Icons.phone_rounded,
+      themeColor: const Color(0xFF8B5CF6),
+      content: UnifiedPhoneDialog(isWindow: true, initialSubTab: initialSubTab),
+      defaultSize: const Size(880, 620),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timeStr =
+        "${_now.hour % 12 == 0 ? 12 : _now.hour % 12}:${_now.minute.toString().padLeft(2, '0')} ${_now.hour >= 12 ? 'PM' : 'AM'}";
+    final dateStr = "Sat, ${_now.month}/${_now.day}";
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 1. Wallpaper Background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/home_page/bg_set_test_1.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 2. Desktop Widgets & Shortcuts Grid
+          Positioned.fill(
+            bottom: 75,
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Side Widgets & App Shortcuts
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSearchBarWidget("Google", Icons.search),
+                        const SizedBox(height: 12),
+                        _buildSearchBarWidget(
+                            "Perplexity AI", Icons.auto_awesome),
+
+                        const Spacer(),
+
+                        // Desktop Icons Grid
+                        Wrap(
+                          spacing: 24,
+                          runSpacing: 24,
+                          children: [
+                            _buildDesktopShortcut(
+                              icon: Icons.screen_share,
+                              label: "Mirroring",
+                              color: const Color(0xFF3B82F6),
+                              onTap: () =>
+                                  MirrorService.launchScreenMirroring(),
+                            ),
+                            _buildDesktopShortcut(
+                              icon: Icons.folder_special,
+                              label: "File Manager",
+                              color: const Color(0xFF10B981),
+                              onTap: () => _showFileManager(context),
+                            ),
+                            _buildDesktopShortcut(
+                              icon: Icons.phone,
+                              label: "Call",
+                              color: const Color(0xFF8B5CF6),
+                              onTap: () =>
+                                  _showPhone(context, initialSubTab: 0),
+                            ),
+                            _buildDesktopShortcut(
+                              icon: Icons.contacts,
+                              label: "Contacts",
+                              color: const Color(0xFFF59E0B),
+                              onTap: () =>
+                                  _showPhone(context, initialSubTab: 2),
+                            ),
+                            _buildDesktopShortcut(
+                              icon: Icons.grid_view_rounded,
+                              label: "Apps Drawer",
+                              color: const Color(0xFF00BFA5),
+                              onTap: () => _showAppDrawer(context),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Right Side Widgets (Clock + Media Player)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _buildClockWidget(timeStr, dateStr),
+                      const SizedBox(height: 20),
+                      _buildFloatingMediaPlayer(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 2.5 Multi-Window Desktop Stack
+          ...(_openWindows.where((w) => !w.isMinimized).toList()
+                ..sort((a, b) => a.zIndex.compareTo(b.zIndex)))
+              .map((win) {
+            final activeWindows =
+                _openWindows.where((w) => !w.isMinimized).toList();
+            final highestWin = activeWindows.isEmpty
+                ? null
+                : activeWindows.reduce((a, b) => a.zIndex > b.zIndex ? a : b);
+            final isFocused = highestWin?.id == win.id;
+
+            return DesktopWindowWidget(
+              key: ValueKey(win.id),
+              id: win.id,
+              title: win.title,
+              icon: win.icon,
+              themeColor: win.themeColor,
+              content: win.content,
+              position: win.position,
+              size: win.size,
+              isMaximized: win.isMaximized,
+              isFocused: isFocused,
+              onClose: () => _closeWindow(win.id),
+              onMinimize: () => _minimizeWindow(win.id),
+              onMaximize: () => _maximizeWindow(win.id),
+              onFocus: () => _focusWindow(win.id),
+              onDrag: (delta, globalPos) => _handleWindowDrag(
+                win,
+                delta,
+                globalPos,
+                MediaQuery.of(context).size,
+              ),
+              onDragEnd: (globalPos) => _handleWindowDragEnd(
+                win,
+                globalPos,
+                MediaQuery.of(context).size,
+              ),
+              onResize: (delta,
+                  {left = false, top = false, right = false, bottom = false}) {
+                setState(() {
+                  double newWidth = win.size.width;
+                  double newHeight = win.size.height;
+                  double newDx = win.position.dx;
+                  double newDy = win.position.dy;
+
+                  if (right) {
+                    newWidth = (win.size.width + delta.dx).clamp(400.0, 1600.0);
+                  }
+                  if (bottom) {
+                    newHeight =
+                        (win.size.height + delta.dy).clamp(300.0, 1000.0);
+                  }
+                  if (left) {
+                    final potentialWidth = win.size.width - delta.dx;
+                    if (potentialWidth >= 400.0 && potentialWidth <= 1600.0) {
+                      newWidth = potentialWidth;
+                      newDx += delta.dx;
+                    }
+                  }
+                  if (top) {
+                    final potentialHeight = win.size.height - delta.dy;
+                    if (potentialHeight >= 300.0 && potentialHeight <= 1000.0) {
+                      newHeight = potentialHeight;
+                      newDy += delta.dy;
+                    }
+                  }
+
+                  win.size = Size(newWidth, newHeight);
+                  win.position = Offset(newDx, newDy);
+                });
+              },
+            );
+          }),
+
+          // 2.8 Glassmorphic Snap Preview Ghost Box
+          if (_activeSnapZone != WindowSnapZone.none)
+            Builder(
+              builder: (context) {
+                final screenSize = MediaQuery.of(context).size;
+                final targetRect =
+                    _getSnapTargetRect(_activeSnapZone, screenSize);
+                if (targetRect == null) return const SizedBox.shrink();
+
+                return Positioned.fromRect(
+                  rect: targetRect,
+                  child: IgnorePointer(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      curve: Curves.easeOutCubic,
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00BFA5).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFF00BFA5).withValues(alpha: 0.8),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF00BFA5).withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          )
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF0F172A).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.aspect_ratio_rounded,
+                                  color: Color(0xFF00BFA5), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                _getSnapLabel(_activeSnapZone),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+          // Floating Connection Status Toast Overlay
+          if (_connectionToastMessage != null)
+            Positioned(
+              top: 24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _isConnectionToastError
+                            ? Colors.redAccent
+                            : const Color(0xFF00BFA5),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isConnectionToastError
+                              ? Icons.signal_cellular_off_rounded
+                              : Icons.check_circle_rounded,
+                          color: _isConnectionToastError
+                              ? Colors.redAccent
+                              : const Color(0xFF00BFA5),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _connectionToastMessage!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (_isConnectionToastError) ...[
+                          const SizedBox(width: 12),
+                          InkWell(
+                            onTap: widget.onStartBoot,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.redAccent),
+                              ),
+                              child: const Text(
+                                "Reconnect",
+                                style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () =>
+                              setState(() => _connectionToastMessage = null),
+                          child: const Icon(Icons.close_rounded,
+                              color: Colors.white54, size: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // TASKBAR DOCK
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 12,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // ZONE 1: Left Navigation & Audio Island
+                _buildDockZone(
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.menu,
+                            color: Colors.white70, size: 18),
+                        onPressed: () => _showAppDrawer(context),
+                        tooltip: "App List",
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.circle_outlined,
+                            color: Colors.white70, size: 16),
+                        onPressed: () => AppLauncherService.sendKeyEvent(3),
+                        tooltip: "Home",
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left,
+                            color: Colors.white70, size: 20),
+                        onPressed: () => AppLauncherService.sendKeyEvent(4),
+                        tooltip: "Back",
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B).withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.music_note,
+                                color: Colors.purpleAccent, size: 12),
+                            SizedBox(width: 6),
+                            Text(
+                              "THE REPORTER WA...",
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ZONE 2: Center App Launcher Island & Fluid Active Taskbar Dock
+                _buildDockZone(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.apps_rounded,
+                            color: Color(0xFF00BFA5), size: 20),
+                        onPressed: () => _showAppDrawer(context),
+                        tooltip: "App Drawer Launcher",
+                      ),
+                      const SizedBox(width: 4),
+                      _buildTaskbarDockIcon(
+                        id: 'file_manager',
+                        icon: Icons.folder_special_rounded,
+                        color: const Color(0xFF10B981),
+                        tooltip: "File Explorer",
+                        onTap: () => _toggleWindowFromTaskbar(
+                            'file_manager', () => _showFileManager(context)),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTaskbarDockIcon(
+                        id: 'phone',
+                        icon: Icons.phone_rounded,
+                        color: const Color(0xFF8B5CF6),
+                        tooltip: "Phone & Calls",
+                        onTap: () => _toggleWindowFromTaskbar(
+                            'phone', () => _showPhone(context)),
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTaskbarDockIcon(
+                        id: 'sms',
+                        icon: Icons.message_rounded,
+                        color: const Color(0xFF00BFA5),
+                        tooltip: "Live SMS",
+                        onTap: () => _toggleWindowFromTaskbar(
+                            'sms', () => _showSms(context)),
+                      ),
+
+                      // Fluid Dynamic Open Windows Registration!
+                      for (final win in _openWindows.where((w) => ![
+                            'file_manager',
+                            'phone',
+                            'sms'
+                          ].contains(w.id))) ...[
+                        const SizedBox(width: 6),
+                        _buildTaskbarDockIcon(
+                          id: win.id,
+                          icon: win.icon,
+                          color: win.themeColor,
+                          tooltip: win.title,
+                          onTap: () => _toggleWindowFromTaskbar(win.id, () {}),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                Row(
+                  children: [
+                    // ZONE 3: System Tray Islands (Adaptive Notifications, Battery, Settings)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // 1. Notification Island
+                        ValueListenableBuilder<List<RealNotificationItem>>(
+                          valueListenable: widget.deviceState.notifications,
+                          builder: (context, notifs, _) {
+                            final count = notifs.length;
+                            return SmartTaskbarPopoverButton(
+                              isExpanded: _activePopover ==
+                                  TaskbarPopoverType.notifications,
+                              onTap: () => _togglePopover(
+                                  TaskbarPopoverType.notifications),
+                              onDismiss: () => setState(() =>
+                                  _activePopover = TaskbarPopoverType.none),
+                              compactChild: Row(
+                                children: [
+                                  _buildStackedNotificationIcons(notifs),
+                                  if (count > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        count > 9 ? "9+" : "$count",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              expandedChild: NotificationFlyout(
+                                  deviceState: widget.deviceState),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        // 2. Battery Island
+                        ValueListenableBuilder<int>(
+                          valueListenable: widget.deviceState.batteryPercentage,
+                          builder: (_, battery, __) =>
+                              SmartTaskbarPopoverButton(
+                            isExpanded:
+                                _activePopover == TaskbarPopoverType.battery,
+                            onTap: () =>
+                                _togglePopover(TaskbarPopoverType.battery),
+                            onDismiss: () => setState(
+                                () => _activePopover = TaskbarPopoverType.none),
+                            compactChild: Row(
+                              children: [
+                                const Icon(Icons.battery_charging_full,
+                                    color: Colors.greenAccent, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$battery%",
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            expandedChild: const BatteryPopover(),
+                          ),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        // 3. Control Center Settings Island
+                        SmartTaskbarPopoverButton(
+                          isExpanded:
+                              _activePopover == TaskbarPopoverType.settings,
+                          onTap: () =>
+                              _togglePopover(TaskbarPopoverType.settings),
+                          onDismiss: () => setState(
+                              () => _activePopover = TaskbarPopoverType.none),
+                          compactChild: const Icon(Icons.settings,
+                              color: Colors.white70, size: 18),
+                          expandedChild: const QuickSettingsPopover(),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(width: 6),
+                    // ZONE 4: Right Clock & Display Island
+                    _buildDockZone(
+                      child: Row(
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                timeStr,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10),
+                              ),
+                              Text(
+                                dateStr,
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 8),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.fullscreen,
+                                color: Colors.white70, size: 18),
+                            onPressed: () {},
+                            tooltip: "Toggle Fullscreen",
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStackedNotificationIcons(List<RealNotificationItem> notifs) {
+    if (notifs.isEmpty) {
+      return const Icon(Icons.notifications_outlined,
+          color: Color(0xFF00BFA5), size: 18);
+    }
+
+    final recent = notifs.take(3).toList();
+
+    return SizedBox(
+      width: 22 + (recent.length - 1) * 14.0,
+      height: 26,
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          for (int i = recent.length - 1; i >= 0; i--) ...[
+            Positioned(
+              left: i * 14.0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  shape: BoxShape.circle,
+                  border:
+                      Border.all(color: const Color(0xFF0F172A), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                    )
+                  ],
+                ),
+                child: SmartAppIconWidget(
+                  packageName: recent[i].packageName,
+                  size: 22,
+                  borderRadius: 11,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+
+
+  Widget _buildTaskbarDockIcon({
+    required String id,
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final isOpen = _openWindows.any((w) => w.id == id);
+    final activeWindows = _openWindows.where((w) => !w.isMinimized).toList();
+    final highestWin = activeWindows.isEmpty
+        ? null
+        : activeWindows.reduce((a, b) => a.zIndex > b.zIndex ? a : b);
+    final isFocused = highestWin?.id == id;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: isFocused
+                ? color.withValues(alpha: 0.3)
+                : isOpen
+                    ? Colors.white10
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isFocused
+                ? Border.all(color: color.withValues(alpha: 0.6))
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isFocused ? color : Colors.white70, size: 18),
+              if (isOpen) ...[
+                const SizedBox(height: 2),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDockZone({required Widget child}) {
+    return SizedBox(
+      height: 48,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBarWidget(String title, IconData icon) {
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2937).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF00BFA5), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Search $title",
+              style: const TextStyle(color: Colors.white60, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClockWidget(String timeStr, String dateStr) {
+    return Container(
+      width: 160,
+      height: 160,
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827).withValues(alpha: 0.7),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white10, width: 2),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              timeStr,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              dateStr,
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingMediaPlayer() {
+    return Container(
+      width: 340,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827).withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.music_note, color: Colors.purpleAccent),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "THE REPORTER WA...",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  "Unknown Artist",
+                  style: TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.skip_previous,
+                color: Colors.white70, size: 20),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(
+              _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              color: const Color(0xFF00BFA5),
+              size: 32,
+            ),
+            onPressed: () => setState(() => _isPlaying = !_isPlaying),
+          ),
+          IconButton(
+            icon: const Icon(Icons.skip_next, color: Colors.white70, size: 20),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopShortcut({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.4)),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

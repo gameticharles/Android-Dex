@@ -1,0 +1,38 @@
+name: adb_device_manager
+description: "ADB Device Manager — Android & Windows Dual Mode Desktop Client"
+publish_to: 'none'
+version: 1.7.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  font_awesome_flutter: ^10.7.0
+  easy_stepper: ^0.8.5
+  flutter_colorpicker: ^1.1.0
+  file_picker: ^8.0.0
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  shelf_web_socket: ^2.0.0
+  web_socket_channel: ^3.0.0
+  http: ^1.2.0
+  crypto: ^3.0.3
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  test: ^1.24.0
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/Desktop/
+    - assets/_my_app/
+    - assets/home_page/
+    - assets/icon/

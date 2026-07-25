@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>AudioCast Pro | Professional Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+  <div class="background-glob"></div>
+  <div class="dashboard">
+
+    <!-- LEFT PANEL: CONTROLS -->
+    <div class="audio-panel panel-card">
+      <div class="header">
+        <h1>AudioCast <span>Pro</span></h1>
+        <div class="branding">
+          <div class="app-tag">
+            <img src="app_icon.png" alt="App Icon">
+            <span>ADB Device Manager</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Information -->
+      <div class="status-container">
+        <div id="status">
+          <span class="dot disconnected"></span>
+          <span>System Ready</span>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="settings-section">
+        <div class="setting-item disabled" data-tooltip="Download our software for full screen mirroring and control.">
+          <span>Screen Mirroring</span>
+          <label class="switch">
+            <input type="checkbox" id="screenToggle" disabled>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-item">
+          <span>Audio Streaming</span>
+          <label class="switch">
+            <input type="checkbox" id="audioToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-item disabled" data-tooltip="Download our software for full remote control access.">
+          <span>Remote Control</span>
+          <label class="switch">
+            <input type="checkbox" id="controlToggle" disabled>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div id="alertBox" class="alert-box">
+        Please enable Audio Streaming to start.
+      </div>
+
+      <div class="controls-group main-actions">
+        <button id="masterStartBtn" class="btn-primary">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span> Start
+        </button>
+        <button id="reconfigBtn" class="btn-accent" style="display: none;">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+              <polyline points="21 3 21 8 16 8"></polyline>
+            </svg>
+          </span> Re Config
+        </button>
+        <button id="masterStopBtn" class="btn-secondary" style="display: none;">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" />
+            </svg>
+          </span> Stop
+        </button>
+      </div>
+
+      <div class="download-box">
+        <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="download-link" target="_blank">
+          <span class="dl-icon">↓</span>
+          <span>Companion App for Desktop</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: CONTENT -->
+    <div class="screen-panel panel-card" id="rightPanel">
+
+      <!-- Idle State (Initial view) -->
+      <div id="idleView" class="idle-view">
+        <div class="idle-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+            <path d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 0 0-8-8V2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 7v2"></path>
+            <path d="M12 15v2"></path>
+            <path d="M7 12h2"></path>
+            <path d="M15 12h2"></path>
+          </svg>
+        </div>
+        <h3>Ready to Stream</h3>
+        <p>Configure your settings and press Start to begin.</p>
+      </div>
+
+      <!-- Feature Placeholders (Visual Only) -->
+      <div id="videoPlaceholderView" class="video-wrapper hidden-panel paused">
+        <div class="phone-frame">
+          <div class="video-placeholder">
+            <span class="icon" style="font-size: 32px; margin-bottom: 8px">📵</span>
+            <span>Premium Feature Required</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio-Only Mode (Large Visualizer) -->
+      <div class="visualizer-wrapper-large hidden-panel" id="largeVisualizer">
+        <div id="waveLarge"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // --- Visualizer Generation ---
+    function generateBars(containerId, count) {
+      const container = document.getElementById(containerId);
+      if (!container) return; // Safety check
+      for (let i = 0; i < count; i++) {
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.setProperty("--i", i);
+        container.appendChild(bar);
+      }
+    }
+    generateBars("waveLarge", 88);
+
+    // UI Elements
+    const statusEl = document.getElementById("status");
+    const idleView = document.getElementById("idleView");
+    const masterStartBtn = document.getElementById("masterStartBtn");
+    const masterStopBtn = document.getElementById("masterStopBtn");
+    const reconfigBtn = document.getElementById("reconfigBtn");
+    const alertBox = document.getElementById("alertBox");
+
+    const audioToggle = document.getElementById("audioToggle");
+    const largeVisualizer = document.getElementById("largeVisualizer");
+
+    // State
+    let isRunning = false;
+
+    // Audio State
+    let audioContext = null;
+    let audioSocket = null;
+    let nextStartTime = 0;
+
+    // --- Core Logic ---
+
+    function updateLayout() {
+      if (!isRunning) {
+        idleView.classList.remove("hidden-panel");
+        largeVisualizer.classList.add("hidden-panel");
+        return;
+      }
+
+      idleView.classList.add("hidden-panel");
+
+      if (audioToggle.checked) {
+        largeVisualizer.classList.remove("hidden-panel");
+      } else {
+        idleView.classList.remove("hidden-panel");
+      }
+    }
+
+    function checkConfigChange() {
+      if (!isRunning) return;
+      // Re-config only needed if running state differs from toggle state
+      reconfigBtn.style.display = "flex";
+    }
+
+    audioToggle.addEventListener("change", checkConfigChange);
+
+    masterStartBtn.addEventListener("click", startServices);
+    masterStopBtn.addEventListener("click", stopServices);
+    reconfigBtn.addEventListener("click", () => {
+      stopServices();
+      setTimeout(startServices, 300);
+    });
+
+    function startServices() {
+      if (!audioToggle.checked) {
+        alertBox.style.display = "block";
+        return;
+      }
+      alertBox.style.display = "none";
+
+      isRunning = true;
+      masterStartBtn.style.display = "none";
+      masterStopBtn.style.display = "flex";
+      reconfigBtn.style.display = "none";
+
+      updateLayout();
+      updateStatus("Connected", "connected");
+      setBarsActive(true);
+
+      initAudio();
+    }
+
+    function stopServices() {
+      isRunning = false;
+      masterStartBtn.style.display = "flex";
+      masterStopBtn.style.display = "none";
+      reconfigBtn.style.display = "none";
+
+      stopAudio();
+
+      updateLayout();
+      updateStatus("System Ready", "disconnected");
+      setBarsActive(false);
+    }
+
+    // --- Audio Module ---
+    function initAudio() {
+      if (!audioContext) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext({ latencyHint: "interactive" });
+      }
+      if (audioContext.state === "suspended") audioContext.resume();
+
+      const proto = window.location.protocol === "https:" ? "wss" : "ws";
+      audioSocket = new WebSocket(`${proto}://${window.location.host}/audio_ws`);
+      audioSocket.binaryType = "arraybuffer";
+      audioSocket.onmessage = (e) => playPcmChunk(e.data);
+      audioSocket.onopen = () => { console.log("Audio Live"); nextStartTime = audioContext.currentTime; };
+    }
+
+    function playPcmChunk(data) {
+      if (!audioContext) return;
+      const pcmData = new Int16Array(data);
+      const floatData = new Float32Array(pcmData.length);
+      for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
+
+      const audioBuffer = audioContext.createBuffer(2, floatData.length / 2, 48000);
+      const ch0 = audioBuffer.getChannelData(0);
+      const ch1 = audioBuffer.getChannelData(1);
+
+      for (let i = 0; i < floatData.length / 2; i++) {
+        ch0[i] = floatData[i * 2];
+        ch1[i] = floatData[i * 2 + 1];
+      }
+
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+
+      const SAFETY_OFFSET = 0.03;
+      let startTime = Math.max(nextStartTime, audioContext.currentTime + SAFETY_OFFSET);
+      source.start(startTime);
+      nextStartTime = startTime + audioBuffer.duration;
+    }
+
+    function stopAudio() {
+      if (audioSocket) { audioSocket.close(); audioSocket = null; }
+      if (audioContext) audioContext.suspend();
+    }
+
+    function updateStatus(text, cls) {
+      statusEl.innerHTML = `<span class="dot ${cls}"></span> ${text}`;
+      document.body.classList.toggle("red-mode", cls !== "connected");
+    }
+
+    function setBarsActive(active) {
+      const allBars = document.querySelectorAll(".bar");
+      allBars.forEach(bar => {
+        bar.style.animationPlayState = active ? "running" : "paused";
+        bar.style.opacity = active ? "1" : "0.3";
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      setBarsActive(false);
+      updateLayout();
+    });
+  </script>
+</body>
+
+</html>

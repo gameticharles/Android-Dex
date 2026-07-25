@@ -1,0 +1,342 @@
+import 'dart:io';
+import 'adb_device_scanner.dart';
+
+class RealSmsMessage {
+  final String address;
+  final String body;
+  final String date;
+
+  RealSmsMessage({
+    required this.address,
+    required this.body,
+    required this.date,
+  });
+}
+
+class RealContactItem {
+  final String id;
+  final String name;
+  final String number;
+
+  RealContactItem({
+    required this.id,
+    required this.name,
+    required this.number,
+  });
+}
+
+class RealCallLogItem {
+  final String name;
+  final String number;
+  final String type; // 1: Incoming, 2: Outgoing, 3: Missed
+  final String duration;
+  final String timestamp;
+
+  RealCallLogItem({
+    required this.name,
+    required this.number,
+    required this.type,
+    required this.duration,
+    required this.timestamp,
+  });
+}
+
+class RealNotificationItem {
+  final String id;
+  final String packageName;
+  final String title;
+  final String body;
+  final String timestamp;
+  final String appName;
+  final List<String> actions;
+
+  RealNotificationItem({
+    required this.id,
+    required this.packageName,
+    required this.title,
+    required this.body,
+    required this.timestamp,
+    required this.appName,
+    this.actions = const [],
+  });
+}
+
+class RealAdbSyncService {
+  /// Normalize phone number to last 9 digits for cross-matching
+  static String normalizeNumber(String raw) {
+    String clean = raw.replaceAll(RegExp(r'[^\d]'), '');
+    if (clean.length > 9) {
+      clean = clean.substring(clean.length - 9);
+    }
+    return clean;
+  }
+
+  /// Fetch real live SMS from Android phone
+  static Future<List<RealSmsMessage>> fetchRealSms() async {
+    final adbPath = await AdbDeviceScanner.getAdbPath();
+    final result = await Process.run(adbPath, [
+      'shell',
+      'content',
+      'query',
+      '--uri',
+      'content://sms/inbox'
+    ]);
+
+    final blocks = result.stdout.toString().split('Row: ');
+    final List<RealSmsMessage> messages = [];
+
+    for (final block in blocks) {
+      if (block.trim().isEmpty) continue;
+      final single = block.replaceAll('\n', ' ');
+
+      String address = 'Unknown';
+      String body = '';
+      String date = '';
+
+      final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
+      if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? 'Unknown';
+
+      final bodyMatch = RegExp(r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)').firstMatch(single);
+      if (bodyMatch != null) body = bodyMatch.group(1)?.trim() ?? '';
+
+      final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
+      if (dateMatch != null) date = dateMatch.group(1)?.trim() ?? '';
+
+      if (body.isNotEmpty) {
+        messages.add(RealSmsMessage(address: address, body: body, date: date));
+      }
+    }
+
+    return messages;
+  }
+
+  /// Fetch real live Contacts from Android phone (2,300+ contacts)
+  static Future<List<RealContactItem>> fetchRealContacts() async {
+    final adbPath = await AdbDeviceScanner.getAdbPath();
+    final result = await Process.run(adbPath, [
+      'shell',
+      'content',
+      'query',
+      '--uri',
+      'content://com.android.contacts/data/phones'
+    ]);
+
+    final blocks = result.stdout.toString().split('Row: ');
+    final List<RealContactItem> contacts = [];
+    final Set<String> seenNumbers = {};
+
+    for (final block in blocks) {
+      if (block.trim().isEmpty) continue;
+      final single = block.replaceAll('\n', ' ');
+
+      String name = '';
+      String number = '';
+      String id = '';
+
+      final nameMatch = RegExp(r'display_name=([^,]+)').firstMatch(single);
+      if (nameMatch != null) name = nameMatch.group(1)?.trim() ?? '';
+
+      final numMatch = RegExp(r'data1=([^,]+)').firstMatch(single);
+      if (numMatch != null) number = numMatch.group(1)?.trim() ?? '';
+
+      final idMatch = RegExp(r'contact_id=([0-9]+)').firstMatch(single);
+      if (idMatch != null) id = idMatch.group(1)?.trim() ?? '';
+
+      final cleanNum = normalizeNumber(number);
+      if (number.isNotEmpty && name.isNotEmpty && name != 'NULL' && cleanNum.length >= 7 && !seenNumbers.contains(cleanNum)) {
+        seenNumbers.add(cleanNum);
+        contacts.add(RealContactItem(
+          id: id.isEmpty ? DateTime.now().millisecondsSinceEpoch.toString() : id,
+          name: name,
+          number: number,
+        ));
+      }
+    }
+
+    contacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return contacts;
+  }
+
+  /// Fetch real live Call Logs mapped to Contacts (2,000+ call logs)
+  static Future<List<RealCallLogItem>> fetchRealCallLogs() async {
+    final adbPath = await AdbDeviceScanner.getAdbPath();
+
+    // 1. Fetch contacts dictionary for robust matching
+    final contacts = await fetchRealContacts();
+    final Map<String, String> phoneToName = {};
+    for (final c in contacts) {
+      final clean = normalizeNumber(c.number);
+      if (clean.length >= 7) {
+        phoneToName[clean] = c.name;
+      }
+    }
+
+    // 2. Query call logs
+    final result = await Process.run(adbPath, [
+      'shell',
+      'content',
+      'query',
+      '--uri',
+      'content://call_log/calls'
+    ]);
+
+    final blocks = result.stdout.toString().split('Row: ');
+    final List<RealCallLogItem> calls = [];
+
+    for (final block in blocks) {
+      if (block.trim().isEmpty) continue;
+      final single = block.replaceAll('\n', ' ');
+
+      String name = '';
+      String number = '';
+      String type = '1';
+      String duration = '0';
+      String dateMs = '';
+
+      final nameMatch = RegExp(r'name=([^,]+)').firstMatch(single);
+      if (nameMatch != null) {
+        final val = nameMatch.group(1)?.trim() ?? '';
+        if (val.isNotEmpty && val != 'NULL' && !val.startsWith('com.android')) {
+          name = val;
+        }
+      }
+
+      final numMatch = RegExp(r'number=([^,]+)').firstMatch(single);
+      if (numMatch != null) number = numMatch.group(1)?.trim() ?? '';
+
+      final typeMatch = RegExp(r'type=([0-9]+)').firstMatch(single);
+      if (typeMatch != null) type = typeMatch.group(1)?.trim() ?? '1';
+
+      final durMatch = RegExp(r'duration=([0-9]+)').firstMatch(single);
+      if (durMatch != null) duration = durMatch.group(1)?.trim() ?? '0';
+
+      final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
+      if (dateMatch != null) dateMs = dateMatch.group(1)?.trim() ?? '';
+
+      if (number.isNotEmpty) {
+        final cleanNum = normalizeNumber(number);
+        if (name.isEmpty && phoneToName.containsKey(cleanNum)) {
+          name = phoneToName[cleanNum]!;
+        } else if (name.isEmpty) {
+          name = number;
+        }
+
+        // Format time timestamp
+        String formattedTime = "14:00";
+        if (dateMs.isNotEmpty) {
+          final dt = DateTime.fromMillisecondsSinceEpoch(int.tryParse(dateMs) ?? 0);
+          formattedTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+        }
+
+        calls.add(RealCallLogItem(
+          name: name,
+          number: number,
+          type: type,
+          duration: duration,
+          timestamp: formattedTime,
+        ));
+      }
+    }
+
+    return calls;
+  }
+
+  /// Fetch real active notifications from connected Android phone
+  static Future<List<RealNotificationItem>> fetchRealNotifications() async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final result = await Process.run(adbPath, [
+        'shell',
+        'dumpsys',
+        'notification',
+        '--noredact',
+      ]);
+
+      final output = result.stdout.toString();
+      final List<RealNotificationItem> items = [];
+
+      final records = output.split('NotificationRecord(');
+
+      for (int i = 1; i < records.length; i++) {
+        final rec = records[i];
+
+        final pkgMatch = RegExp(r'pkg=([^\s]+)').firstMatch(rec);
+        final pkg = pkgMatch?.group(1) ?? 'android';
+
+        // Ignore system noise
+        if (pkg == 'com.android.systemui' && rec.contains('USB debugging')) continue;
+
+        String title = '';
+        String text = '';
+
+        final titleMatch = RegExp(r'android\.title=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
+        if (titleMatch != null) {
+          title = titleMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+        }
+
+        final textMatch = RegExp(r'android\.text=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
+        if (textMatch != null) {
+          text = textMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+        }
+
+        if (title.isNotEmpty || text.isNotEmpty) {
+          String appName = pkg.split('.').last;
+          if (appName.isNotEmpty) {
+            appName = appName[0].toUpperCase() + appName.substring(1);
+          }
+
+          final List<String> parsedActions = [];
+          final actionMatches =
+              RegExp(r'title="([^"]+)"|Action\(title=(.*?)(?:,|\))')
+                  .allMatches(rec);
+          for (final m in actionMatches) {
+            final act = (m.group(1) ?? m.group(2))?.trim();
+            if (act != null &&
+                act.isNotEmpty &&
+                act != title &&
+                !parsedActions.contains(act) &&
+                act.length < 30) {
+              parsedActions.add(act);
+            }
+          }
+
+          if (parsedActions.isEmpty) {
+            if (pkg.contains('messaging') ||
+                pkg.contains('sms') ||
+                pkg.contains('whatsapp')) {
+              parsedActions.addAll(['Reply', 'Mark as read']);
+            } else if (pkg.contains('dialer') ||
+                pkg.contains('telecom') ||
+                pkg.contains('phone')) {
+              parsedActions.addAll(['Callback', 'Message']);
+            } else if (pkg.contains('mail') || pkg.contains('gmail')) {
+              parsedActions.addAll(['Reply', 'Archive']);
+            } else if (pkg.contains('youtube') ||
+                pkg.contains('spotify') ||
+                pkg.contains('music')) {
+              parsedActions.addAll(['Pause', 'Next']);
+            }
+          }
+
+          final now = DateTime.now();
+          final timeStr =
+              "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+          items.add(RealNotificationItem(
+            id: 'notif_${i}_${pkg}',
+            packageName: pkg,
+            title: title.isNotEmpty ? title : appName,
+            body: text.isNotEmpty ? text : 'New notification',
+            timestamp: timeStr,
+            appName: appName,
+            actions: parsedActions,
+          ));
+        }
+      }
+
+      return items;
+    } catch (_) {
+      return [];
+    }
+  }
+}

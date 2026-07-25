@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎧 WebCast Visual UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* --- Global Variables --- */
+    :root {
+      --main-color: #00e5ff;
+      --main-glow: #00e5ff55;
+      --bg-gradient: radial-gradient(circle at 20% 20%, #10121a 0%, #000 100%);
+      --panel-bg: rgba(20, 20, 25, 0.45);
+      --bar-gradient: linear-gradient(180deg, #00e5ff 0%, #007aff 100%);
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: #eaeaea;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    h1 {
+      color: var(--main-color);
+      font-weight: 600;
+      font-size: 1.8em;
+      text-shadow: 0 0 12px var(--main-glow);
+      margin-bottom: 30px;
+    }
+
+    /* --- Glass Panel --- */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid color-mix(in srgb, var(--main-color) 30%, transparent);
+      border-radius: 20px;
+      box-shadow: 0 0 30px color-mix(in srgb, var(--main-color) 15%, transparent);
+      backdrop-filter: blur(12px);
+      padding: 40px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: 0.4s ease;
+    }
+
+    /* --- Equalizer Bars --- */
+    #wave {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      height: 160px;
+      width: 480px;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+
+    .bar {
+      width: 6px;
+      background: var(--bar-gradient);
+      border-radius: 3px;
+      animation: bounce 2.5s ease-in-out infinite;
+      box-shadow: 0 0 12px var(--main-glow);
+      transition: background 0.5s, box-shadow 0.5s;
+    }
+
+    .bar:nth-child(n) {
+      animation-delay: calc(var(--i) * 0.05s);
+    }
+
+    @keyframes bounce {
+      0%, 100% { height: 20%; opacity: 0.5; }
+      50% { height: 100%; opacity: 1; }
+    }
+
+    /* --- Floating Glow --- */
+    .glow {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, var(--main-glow) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(60px);
+      z-index: -1;
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="glow"></div>
+  <div class="panel">
+    <h1>🎧 Android Cast Visual</h1>
+    <br>
+    <br>
+    <div id="wave"></div>
+  </div>
+
+  <script>
+    // Generate the bars (visual only)
+    const wave = document.getElementById("wave");
+    const numBars = 44;
+    for (let i = 0; i < numBars; i++) {
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.setProperty("--i", i);
+      wave.appendChild(bar);
+    }
+  </script>
+</body>
+</html>
