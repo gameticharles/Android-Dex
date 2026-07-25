@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import 'models/device_state.dart';
 import 'services/adb_device_scanner.dart';
 import 'services/boot_manager.dart';
@@ -9,6 +10,11 @@ import 'ui/dex_desktop_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await windowManager.ensureInitialized();
+  } catch (e) {
+    debugPrint("WindowManager init skipped/failed: $e");
+  }
   runApp(const AdbDeviceManagerApp());
 }
 

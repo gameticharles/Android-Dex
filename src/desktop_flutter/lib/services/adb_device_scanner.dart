@@ -202,7 +202,7 @@ class AdbDeviceScanner {
     final notifs = await RealAdbSyncService.fetchRealNotifications();
     state.notifications.value = notifs;
 
-    final media = await RealAdbSyncService.fetchRealMediaState();
+    final media = await RealAdbSyncService.fetchRealMediaState(currentState: state.mediaState.value);
     state.mediaState.value = media;
 
     state.deviceIp.value = serial;

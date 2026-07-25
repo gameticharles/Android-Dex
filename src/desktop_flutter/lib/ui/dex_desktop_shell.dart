@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
 import '../models/device_state.dart';
 import '../services/app_launcher_service.dart';
 import '../services/mirror_service.dart';
@@ -77,6 +79,7 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
   late Timer _clockTimer;
   DateTime _now = DateTime.now();
   bool _isPlaying = false;
+  bool _isFullScreen = false;
   TaskbarPopoverType _activePopover = TaskbarPopoverType.none;
 
   // Desktop Windowing State
@@ -212,6 +215,12 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
   @override
   void initState() {
     super.initState();
+    try {
+      windowManager.isFullScreen().then((isFS) {
+        if (mounted) setState(() => _isFullScreen = isFS);
+      }).catchError((_) {});
+    } catch (_) {}
+
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -262,6 +271,27 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
         _activePopover = type;
       }
     });
+  }
+
+  Future<void> _toggleFullScreen() async {
+    try {
+      final isFS = await windowManager.isFullScreen();
+      await windowManager.setFullScreen(!isFS);
+      if (mounted) {
+        setState(() {
+          _isFullScreen = !isFS;
+        });
+      }
+    } catch (_) {
+      setState(() {
+        _isFullScreen = !_isFullScreen;
+      });
+      if (_isFullScreen) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
+    }
   }
 
   void openDesktopWindow({
@@ -1034,10 +1064,17 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.fullscreen,
-                                color: Colors.white70, size: 18),
-                            onPressed: () {},
-                            tooltip: "Toggle Fullscreen",
+                            icon: Icon(
+                              _isFullScreen
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
+                              color: Colors.white70,
+                              size: 18,
+                            ),
+                            onPressed: _toggleFullScreen,
+                            tooltip: _isFullScreen
+                                ? "Exit Fullscreen"
+                                : "Toggle Fullscreen",
                           ),
                         ],
                       ),

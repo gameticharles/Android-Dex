@@ -74,13 +74,8 @@ class RealAdbSyncService {
   /// Fetch real live SMS from Android phone
   static Future<List<RealSmsMessage>> fetchRealSms() async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final result = await Process.run(adbPath, [
-      'shell',
-      'content',
-      'query',
-      '--uri',
-      'content://sms/inbox'
-    ]);
+    final result = await Process.run(
+        adbPath, ['shell', 'content', 'query', '--uri', 'content://sms/inbox']);
 
     final blocks = result.stdout.toString().split('Row: ');
     final List<RealSmsMessage> messages = [];
@@ -96,7 +91,9 @@ class RealAdbSyncService {
       final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
       if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? 'Unknown';
 
-      final bodyMatch = RegExp(r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)').firstMatch(single);
+      final bodyMatch = RegExp(
+              r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)')
+          .firstMatch(single);
       if (bodyMatch != null) body = bodyMatch.group(1)?.trim() ?? '';
 
       final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
@@ -143,17 +140,24 @@ class RealAdbSyncService {
       if (idMatch != null) id = idMatch.group(1)?.trim() ?? '';
 
       final cleanNum = normalizeNumber(number);
-      if (number.isNotEmpty && name.isNotEmpty && name != 'NULL' && cleanNum.length >= 7 && !seenNumbers.contains(cleanNum)) {
+      if (number.isNotEmpty &&
+          name.isNotEmpty &&
+          name != 'NULL' &&
+          cleanNum.length >= 7 &&
+          !seenNumbers.contains(cleanNum)) {
         seenNumbers.add(cleanNum);
         contacts.add(RealContactItem(
-          id: id.isEmpty ? DateTime.now().millisecondsSinceEpoch.toString() : id,
+          id: id.isEmpty
+              ? DateTime.now().millisecondsSinceEpoch.toString()
+              : id,
           name: name,
           number: number,
         ));
       }
     }
 
-    contacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    contacts
+        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return contacts;
   }
 
@@ -172,13 +176,8 @@ class RealAdbSyncService {
     }
 
     // 2. Query call logs
-    final result = await Process.run(adbPath, [
-      'shell',
-      'content',
-      'query',
-      '--uri',
-      'content://call_log/calls'
-    ]);
+    final result = await Process.run(adbPath,
+        ['shell', 'content', 'query', '--uri', 'content://call_log/calls']);
 
     final blocks = result.stdout.toString().split('Row: ');
     final List<RealCallLogItem> calls = [];
@@ -224,8 +223,10 @@ class RealAdbSyncService {
         // Format time timestamp
         String formattedTime = "14:00";
         if (dateMs.isNotEmpty) {
-          final dt = DateTime.fromMillisecondsSinceEpoch(int.tryParse(dateMs) ?? 0);
-          formattedTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+          final dt =
+              DateTime.fromMillisecondsSinceEpoch(int.tryParse(dateMs) ?? 0);
+          formattedTime =
+              "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
         }
 
         calls.add(RealCallLogItem(
@@ -264,19 +265,28 @@ class RealAdbSyncService {
         final pkg = pkgMatch?.group(1) ?? 'android';
 
         // Ignore system noise
-        if (pkg == 'com.android.systemui' && rec.contains('USB debugging')) continue;
+        if (pkg == 'com.android.systemui' && rec.contains('USB debugging'))
+          continue;
 
         String title = '';
         String text = '';
 
-        final titleMatch = RegExp(r'android\.title=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
+        final titleMatch =
+            RegExp(r'android\.title=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
         if (titleMatch != null) {
-          title = titleMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+          title = titleMatch
+                  .group(1)
+                  ?.replaceAll(RegExp(r'^"|"|\s+$'), '')
+                  .trim() ??
+              '';
         }
 
-        final textMatch = RegExp(r'android\.text=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
+        final textMatch =
+            RegExp(r'android\.text=(.*?)(?=\n|\r|android\.)').firstMatch(rec);
         if (textMatch != null) {
-          text = textMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+          text =
+              textMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ??
+                  '';
         }
 
         if (title.isNotEmpty || text.isNotEmpty) {
@@ -341,7 +351,8 @@ class RealAdbSyncService {
   }
 
   /// Fetch real active media session state from connected Android phone
-  static Future<RealMediaState> fetchRealMediaState() async {
+  static Future<RealMediaState> fetchRealMediaState(
+      {RealMediaState? currentState}) async {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
       final result = await Process.run(adbPath, [
@@ -359,34 +370,112 @@ class RealAdbSyncService {
       ]);
       final audioOutput = audioResult.stdout.toString();
 
-      bool isPlaying = output.contains('state=3') ||
+      bool isPlaying = output.contains('state=PLAYING(3)') ||
+          output.contains('state=3') ||
           output.contains('state=STATE_PLAYING') ||
           output.contains('PlaybackState {state=3') ||
+          output.contains('PlaybackState {state=PLAYING') ||
           audioOutput.contains('isMusicActive()=true') ||
           audioOutput.contains('mIsMusicActive=true');
 
-      String pkg = '';
-      String title = '';
-      String artist = '';
+      String pkg = currentState?.packageName ?? '';
+      String title = currentState?.title ?? '';
+      String artist = currentState?.artist ?? '';
+      String album = currentState?.album ?? '';
+      int durationMs =
+          (currentState?.durationMs != null && currentState!.durationMs > 0)
+              ? currentState.durationMs
+              : 225000;
+      int positionMs = currentState?.positionMs ?? 0;
+      String? artworkBase64 = currentState?.artworkBase64;
+      String? artworkUrl = currentState?.artworkUrl;
 
-      final pkgMatch = RegExp(r'package=([^\s,]+)|Sessions Stack:\s*([^\s]+)').firstMatch(output);
+      final pkgMatch = RegExp(r'package=([^\s,]+)|Sessions Stack:\s*([^\s]+)')
+          .firstMatch(output);
       if (pkgMatch != null) {
-        pkg = (pkgMatch.group(1) ?? pkgMatch.group(2)) ?? '';
+        final parsedPkg = (pkgMatch.group(1) ?? pkgMatch.group(2)) ?? '';
+        if (parsedPkg.isNotEmpty && parsedPkg != 'com.android.server.telecom') {
+          pkg = parsedPkg;
+        }
       }
 
-      final titleMatch = RegExp(r'description=(.*?)(,\s*|$)').firstMatch(output);
-      if (titleMatch != null) {
-        title = titleMatch.group(1)?.trim() ?? '';
+      // Parse position accurately from PlaybackState (avoiding buffered position)
+      final posMatch = RegExp(r'PlaybackState\s*\{[^}]*?\bposition=([0-9]+)')
+              .firstMatch(output) ??
+          RegExp(r'(?<!buffered\s)position=([0-9]+)').firstMatch(output);
+      if (posMatch != null) {
+        final parsedPos = int.tryParse(posMatch.group(1)!);
+        if (parsedPos != null && parsedPos > 0) {
+          positionMs = parsedPos;
+        }
       }
 
-      final metadataMatch = RegExp(r'android\.media\.metadata\.TITLE=(.*?)(?=\n|\r|android\.)').firstMatch(output);
-      if (metadataMatch != null && title.isEmpty) {
-        title = metadataMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+      // Parse MediaDescription title/artist/album
+      final descMatch =
+          RegExp(r'description=(.*?)(?=\n|\r|queueTitle=|\s{2,}|$)')
+              .firstMatch(output);
+      if (descMatch != null) {
+        final descStr = descMatch.group(1)?.trim() ?? '';
+        if (descStr.isNotEmpty && descStr != 'null') {
+          final parts = descStr.split(RegExp(r'\s*[,\u2014\-]\s*'));
+          if (parts.isNotEmpty && parts[0].trim().isNotEmpty) {
+            title = parts[0].trim();
+          }
+          if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+            artist = parts[1].trim();
+          }
+          if (parts.length > 2 && parts[2].trim().isNotEmpty) {
+            album = parts[2].trim();
+          }
+        }
       }
 
-      final artistMatch = RegExp(r'android\.media\.metadata\.ARTIST=(.*?)(?=\n|\r|android\.)').firstMatch(output);
-      if (artistMatch != null) {
-        artist = artistMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+      final metadataTitle =
+          RegExp(r'android\.media\.metadata\.TITLE=(.*?)(?=\n|\r|android\.)')
+              .firstMatch(output);
+      if (metadataTitle != null) {
+        final val =
+            metadataTitle.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();
+        if (val != null && val.isNotEmpty) title = val;
+      }
+
+      final metadataArtist =
+          RegExp(r'android\.media\.metadata\.ARTIST=(.*?)(?=\n|\r|android\.)')
+              .firstMatch(output);
+      if (metadataArtist != null) {
+        final val = metadataArtist
+            .group(1)
+            ?.replaceAll(RegExp(r'^"|"|\s+$'), '')
+            .trim();
+        if (val != null && val.isNotEmpty) artist = val;
+      }
+
+      final metadataAlbum =
+          RegExp(r'android\.media\.metadata\.ALBUM=(.*?)(?=\n|\r|android\.)')
+              .firstMatch(output);
+      if (metadataAlbum != null) {
+        final val =
+            metadataAlbum.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();
+        if (val != null && val.isNotEmpty) album = val;
+      }
+
+      final durMatch = RegExp(r'android\.media\.metadata\.DURATION=([0-9]+)')
+              .firstMatch(output) ??
+          RegExp(r'\bduration=([0-9]+)').firstMatch(output);
+      if (durMatch != null) {
+        final parsedDur = int.tryParse(durMatch.group(1)!);
+        if (parsedDur != null && parsedDur > 0) durationMs = parsedDur;
+      }
+
+      final artUriMatch = RegExp(
+              r'android\.media\.metadata\.(?:ART_URI|ALBUM_ART_URI)=(.*?)(?=\n|\r|android\.)')
+          .firstMatch(output);
+      if (artUriMatch != null) {
+        final uri =
+            artUriMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();
+        if (uri != null && uri.isNotEmpty) {
+          artworkUrl = uri;
+        }
       }
 
       if (title.isEmpty) {
@@ -409,45 +498,84 @@ class RealAdbSyncService {
       return RealMediaState(
         title: title,
         artist: artist,
+        album: album,
         packageName: pkg,
         isPlaying: isPlaying,
+        durationMs: durationMs,
+        positionMs: positionMs,
+        artworkBase64: artworkBase64,
+        artworkUrl: artworkUrl,
       );
     } catch (_) {
-      return const RealMediaState();
+      return currentState ?? const RealMediaState();
     }
+  }
+
+  /// Send seek command to active Android MediaSession
+  static Future<void> seekMedia(int positionMs) async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      await Process.run(adbPath, [
+        'shell',
+        'cmd',
+        'media_session',
+        'seek',
+        positionMs.toString(),
+      ]);
+    } catch (_) {}
   }
 }
 
 class RealMediaState {
   final String title;
   final String artist;
+  final String album;
   final String packageName;
   final bool isPlaying;
-  final double positionProgress;
+  final int positionMs;
+  final int durationMs;
+  final String? artworkBase64;
+  final String? artworkUrl;
 
   const RealMediaState({
     this.title = "No Active Media",
     this.artist = "Android DEX Audio Engine",
+    this.album = "",
     this.packageName = "",
     this.isPlaying = false,
-    this.positionProgress = 0.0,
+    this.positionMs = 0,
+    this.durationMs = 225000,
+    this.artworkBase64,
+    this.artworkUrl,
   });
+
+  double get positionProgress {
+    if (durationMs <= 0) return 0.0;
+    final double p = positionMs / durationMs;
+    return p.clamp(0.0, 1.0);
+  }
 
   RealMediaState copyWith({
     String? title,
     String? artist,
+    String? album,
     String? packageName,
     bool? isPlaying,
-    double? positionProgress,
+    int? positionMs,
+    int? durationMs,
+    String? artworkBase64,
+    String? artworkUrl,
   }) {
     return RealMediaState(
       title: title ?? this.title,
       artist: artist ?? this.artist,
+      album: album ?? this.album,
       packageName: packageName ?? this.packageName,
       isPlaying: isPlaying ?? this.isPlaying,
-      positionProgress: positionProgress ?? this.positionProgress,
+      positionMs: positionMs ?? this.positionMs,
+      durationMs: durationMs ?? this.durationMs,
+      artworkBase64: artworkBase64 ?? this.artworkBase64,
+      artworkUrl: artworkUrl ?? this.artworkUrl,
     );
   }
 }
-
-

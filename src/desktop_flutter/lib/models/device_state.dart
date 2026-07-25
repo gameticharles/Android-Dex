@@ -36,5 +36,22 @@ class DeviceState {
         if (s['wifi_name'] != null) wifiName.value = s['wifi_name'];
       }
     }
+
+    if (json.containsKey('media')) {
+      final m = json['media'];
+      if (m is Map) {
+        mediaState.value = mediaState.value.copyWith(
+          title: m['title']?.toString() ?? mediaState.value.title,
+          artist: m['artist']?.toString() ?? mediaState.value.artist,
+          album: m['album']?.toString() ?? mediaState.value.album,
+          packageName: (m['package_name'] ?? m['packageName'])?.toString() ?? mediaState.value.packageName,
+          isPlaying: (m['is_playing'] ?? m['isPlaying']) as bool? ?? mediaState.value.isPlaying,
+          positionMs: (m['position_ms'] ?? m['positionMs']) as int? ?? mediaState.value.positionMs,
+          durationMs: (m['duration_ms'] ?? m['durationMs']) as int? ?? mediaState.value.durationMs,
+          artworkBase64: (m['artwork'] ?? m['artwork_base64'] ?? m['artworkBase64'])?.toString() ?? mediaState.value.artworkBase64,
+          artworkUrl: (m['artwork_url'] ?? m['artworkUrl'])?.toString() ?? mediaState.value.artworkUrl,
+        );
+      }
+    }
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/device_state.dart';
 import '../services/app_launcher_service.dart';
@@ -29,18 +31,150 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
   bool _isShuffle = false;
   bool _isRepeat = false;
   double _volume = 0.75;
-  double _progress = 0.42;
 
-  String _formatTime(double progress) {
-    const totalSeconds = 225; // 3:45 total duration
-    final currentSeconds = (progress * totalSeconds).toInt();
-    final mins = currentSeconds ~/ 60;
-    final secs = currentSeconds % 60;
+  Timer? _playbackTicker;
+  int _currentPosMs = 0;
+  bool _isDraggingSlider = false;
+  double _dragProgress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncPlaybackState();
+  }
+
+  @override
+  void dispose() {
+    _playbackTicker?.cancel();
+    super.dispose();
+  }
+
+  void _syncPlaybackState() {
+    final media = widget.deviceState?.mediaState.value ?? const RealMediaState();
+    if (!_isDraggingSlider) {
+      _currentPosMs = media.positionMs;
+    }
+    _manageTicker(media.isPlaying, media.durationMs);
+  }
+
+  void _manageTicker(bool isPlaying, int durationMs) {
+    if (isPlaying) {
+      if (_playbackTicker == null || !_playbackTicker!.isActive) {
+        _playbackTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+          if (mounted) {
+            final curMedia = widget.deviceState?.mediaState.value ?? const RealMediaState();
+            if (curMedia.isPlaying && !_isDraggingSlider) {
+              final maxMs = curMedia.durationMs > 0 ? curMedia.durationMs : 225000;
+              setState(() {
+                if (_currentPosMs < maxMs) {
+                  _currentPosMs += 1000;
+                }
+              });
+            }
+          }
+        });
+      }
+    } else {
+      _playbackTicker?.cancel();
+      _playbackTicker = null;
+    }
+  }
+
+  String _formatTimeFromMs(int ms) {
+    if (ms <= 0) return "00:00";
+    final totalSecs = ms ~/ 1000;
+    final mins = totalSecs ~/ 60;
+    final secs = totalSecs % 60;
     return "${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}";
   }
 
   void _sendMediaKey(int keyCode) {
     AppLauncherService.sendKeyEvent(keyCode);
+  }
+
+  Widget _buildArtworkWidget(RealMediaState media) {
+    if (media.artworkBase64 != null && media.artworkBase64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(media.artworkBase64!);
+        return Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(bytes, fit: BoxFit.cover),
+          ),
+        );
+      } catch (_) {}
+    } else if (media.artworkUrl != null && media.artworkUrl!.isNotEmpty) {
+      return Container(
+        width: 54,
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            media.artworkUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildFallbackArtwork(media.packageName),
+          ),
+        ),
+      );
+    }
+
+    return _buildFallbackArtwork(media.packageName);
+  }
+
+  Widget _buildFallbackArtwork(String pkg) {
+    if (pkg.isNotEmpty) {
+      return SmartAppIconWidget(
+        packageName: pkg,
+        size: 54,
+        borderRadius: 12,
+      );
+    }
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: const Icon(
+        Icons.graphic_eq_rounded,
+        color: Colors.white,
+        size: 28,
+      ),
+    );
   }
 
   @override
@@ -49,6 +183,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
         ? ValueListenableBuilder<RealMediaState>(
             valueListenable: widget.deviceState!.mediaState,
             builder: (context, media, _) {
+              _syncPlaybackState();
               return _buildFlyoutBody(media);
             },
           )
@@ -59,7 +194,15 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     final bool isPlaying = media.isPlaying;
     final String title = media.title.isNotEmpty ? media.title : "Starlight Horizon";
     final String artist = media.artist.isNotEmpty ? media.artist : "Android DEX Audio Engine";
-    final String pkg = media.packageName;
+    final String album = media.album;
+    final int totalDurationMs = media.durationMs > 0 ? media.durationMs : 225000;
+
+    final double currentProgress = _isDraggingSlider
+        ? _dragProgress
+        : (_currentPosMs / totalDurationMs).clamp(0.0, 1.0);
+    final int displayPosMs = _isDraggingSlider
+        ? (_dragProgress * totalDurationMs).round()
+        : _currentPosMs;
 
     return Container(
       width: 360,
@@ -131,36 +274,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
             ),
             child: Row(
               children: [
-                pkg.isNotEmpty
-                    ? SmartAppIconWidget(
-                        packageName: pkg,
-                        size: 54,
-                        borderRadius: 12,
-                      )
-                    : Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.graphic_eq_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
+                _buildArtworkWidget(media),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -178,7 +292,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        artist,
+                        album.isNotEmpty ? "$artist • $album" : artist,
                         style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 11,
@@ -210,8 +324,26 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   overlayColor: const Color(0xFF00BFA5).withValues(alpha: 0.2),
                 ),
                 child: Slider(
-                  value: _progress,
-                  onChanged: (v) => setState(() => _progress = v),
+                  value: currentProgress,
+                  onChangeStart: (v) {
+                    setState(() {
+                      _isDraggingSlider = true;
+                      _dragProgress = v;
+                    });
+                  },
+                  onChanged: (v) {
+                    setState(() {
+                      _dragProgress = v;
+                    });
+                  },
+                  onChangeEnd: (v) {
+                    final targetMs = (v * totalDurationMs).round();
+                    setState(() {
+                      _isDraggingSlider = false;
+                      _currentPosMs = targetMs;
+                    });
+                    RealAdbSyncService.seekMedia(targetMs);
+                  },
                 ),
               ),
               Padding(
@@ -220,13 +352,13 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _formatTime(_progress),
+                      _formatTimeFromMs(displayPosMs),
                       style: const TextStyle(
                           color: Colors.white54, fontSize: 10),
                     ),
-                    const Text(
-                      "03:45",
-                      style: TextStyle(color: Colors.white54, fontSize: 10),
+                    Text(
+                      _formatTimeFromMs(totalDurationMs),
+                      style: const TextStyle(color: Colors.white54, fontSize: 10),
                     ),
                   ],
                 ),
@@ -255,7 +387,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                 ),
                 onPressed: () {
                   _sendMediaKey(88); // KEYCODE_MEDIA_PREVIOUS
-                  setState(() => _progress = 0.0);
+                  setState(() => _currentPosMs = 0);
                 },
               ),
               Container(
@@ -297,7 +429,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                 ),
                 onPressed: () {
                   _sendMediaKey(87); // KEYCODE_MEDIA_NEXT
-                  setState(() => _progress = 0.0);
+                  setState(() => _currentPosMs = 0);
                 },
               ),
               IconButton(
@@ -367,5 +499,3 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     );
   }
 }
-
-
