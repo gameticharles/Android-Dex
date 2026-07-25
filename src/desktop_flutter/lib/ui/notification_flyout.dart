@@ -66,8 +66,13 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
               builder: (context, notifs, _) {
                 final activeNotifs = notifs.where((n) => !_dismissed.contains(n)).toList();
 
+                for (final n in activeNotifs) {
+                  if (AppLauncherService.getCachedIconUrl(n.packageName) == null) {
+                    AppLauncherService.getIconUrlForPackage(n.packageName);
+                  }
+                }
+
                 return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header
                     Row(

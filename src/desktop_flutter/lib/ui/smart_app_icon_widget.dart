@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/app_launcher_service.dart';
 
@@ -23,6 +24,7 @@ class _SmartAppIconWidgetState extends State<SmartAppIconWidget> {
   @override
   void initState() {
     super.initState();
+    AppLauncherService.iconCacheUpdateNotifier.addListener(_onCacheUpdated);
     _resolveIcon();
   }
 
@@ -31,6 +33,21 @@ class _SmartAppIconWidgetState extends State<SmartAppIconWidget> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.packageName != widget.packageName) {
       _resolveIcon();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppLauncherService.iconCacheUpdateNotifier.removeListener(_onCacheUpdated);
+    super.dispose();
+  }
+
+  void _onCacheUpdated() {
+    final cached = AppLauncherService.getCachedIconUrl(widget.packageName);
+    if (mounted && cached != null && cached != _iconUrl) {
+      setState(() {
+        _iconUrl = cached;
+      });
     }
   }
 
@@ -79,18 +96,30 @@ class _SmartAppIconWidgetState extends State<SmartAppIconWidget> {
   @override
   Widget build(BuildContext context) {
     if (_iconUrl != null) {
+      final isLocalFile = !(_iconUrl!.startsWith('http://') || _iconUrl!.startsWith('https://'));
+      final Widget imageWidget = isLocalFile
+          ? Image.file(
+              File(_iconUrl!),
+              width: widget.size,
+              height: widget.size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildFallback(),
+            )
+          : Image.network(
+              _iconUrl!,
+              width: widget.size,
+              height: widget.size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildFallback(),
+            );
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        child: Image.network(
-          _iconUrl!,
-          width: widget.size,
-          height: widget.size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallback(),
-        ),
+        child: imageWidget,
       );
     }
 
     return _buildFallback();
   }
 }
+

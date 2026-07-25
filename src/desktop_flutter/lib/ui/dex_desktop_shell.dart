@@ -852,6 +852,80 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        // 0. Icon Sync Status Indicator
+                        ValueListenableBuilder<AppIconSyncProgress>(
+                          valueListenable: AppLauncherService.iconSyncProgress,
+                          builder: (context, progress, _) {
+                            if (progress.totalApps == 0) {
+                              return const SizedBox.shrink();
+                            }
+                            if (progress.isComplete) {
+                              return Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                child: Tooltip(
+                                  message:
+                                      "All app icons synced (${progress.syncedApps}/${progress.totalApps})",
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00BFA5)
+                                          .withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: const Color(0xFF00BFA5)
+                                              .withValues(alpha: 0.4)),
+                                    ),
+                                    child: const Icon(Icons.cloud_done_rounded,
+                                        color: Color(0xFF00BFA5), size: 14),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: Tooltip(
+                                message:
+                                    "Syncing app icons (${progress.syncedApps}/${progress.totalApps})...",
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amberAccent
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: Colors.amberAccent
+                                            .withValues(alpha: 0.4)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 10,
+                                        height: 10,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.amberAccent,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "${progress.syncedApps}/${progress.totalApps}",
+                                        style: const TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
                         // 1. Notification Island
                         ValueListenableBuilder<List<RealNotificationItem>>(
                           valueListenable: widget.deviceState.notifications,

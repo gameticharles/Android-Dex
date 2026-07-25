@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'smart_app_icon_widget.dart';
 
 class PhoneNotification {
   final String id;
+  final String packageName;
   final String title;
   final String message;
   final String appName;
@@ -9,6 +11,7 @@ class PhoneNotification {
 
   PhoneNotification({
     required this.id,
+    required this.packageName,
     required this.title,
     required this.message,
     required this.appName,
@@ -27,6 +30,7 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
   final List<PhoneNotification> _notifications = [
     PhoneNotification(
       id: "1",
+      packageName: "com.telecel.ghana",
       title: "Telecel Weekend Offer",
       message: "Enjoy 4.4GB & 100mins call to ALL NETWORKS for GHs6. Dial *5588#",
       appName: "Telecel",
@@ -34,6 +38,7 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
     ),
     PhoneNotification(
       id: "2",
+      packageName: "com.mobilemoney.momo",
       title: "MobileMoney Payment",
       message: "Payment made for GHS 1,300.00 to ABDUL-WAHAB BANSI AWUDU.",
       appName: "MobileMoney",
@@ -41,6 +46,7 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
     ),
     PhoneNotification(
       id: "3",
+      packageName: "gh.edu.knust.dosa",
       title: "DoSA Day 2026",
       message: "Join the Directorate of Student Affairs for DoSA Day 2026 at B5 Auditorium.",
       appName: "DOSA KNUST",
@@ -115,9 +121,13 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
+                                  SmartAppIconWidget(
+                                    packageName: notif.packageName,
+                                    size: 20,
+                                    borderRadius: 10,
+                                  ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     notif.appName,
                                     style: const TextStyle(
@@ -126,6 +136,7 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                                       fontSize: 13,
                                     ),
                                   ),
+                                  const Spacer(),
                                   Text(
                                     notif.time,
                                     style: const TextStyle(

@@ -130,12 +130,17 @@ class _AppDrawerDialogState extends State<AppDrawerDialog> {
                     _buildCategoryPill("User Apps"),
                   ],
                 ),
-                if (!widget.isWindow)
-                  IconButton(
-                    icon:
-                        const Icon(Icons.close_rounded, color: Colors.white70),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                Row(
+                  children: [
+                    _buildIconSyncBadge(),
+                    if (!widget.isWindow)
+                      IconButton(
+                        icon:
+                            const Icon(Icons.close_rounded, color: Colors.white70),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -449,34 +454,190 @@ class _AppDrawerDialogState extends State<AppDrawerDialog> {
     );
   }
 
+  Widget _buildIconSyncBadge() {
+    return ValueListenableBuilder<AppIconSyncProgress>(
+      valueListenable: AppLauncherService.iconSyncProgress,
+      builder: (context, progress, _) {
+        if (progress.totalApps == 0) return const SizedBox.shrink();
+
+        final bool isDone = progress.isComplete;
+        final color = isDone ? const Color(0xFF00BFA5) : Colors.amberAccent;
+        final text = isDone
+            ? "Icons Synced (${progress.syncedApps}/${progress.totalApps}) ✓"
+            : "Syncing Icons (${progress.syncedApps}/${progress.totalApps})...";
+
+        return Container(
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isDone) ...[
+                SizedBox(
+                  width: 10,
+                  height: 10,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ] else ...[
+                Icon(Icons.check_circle_rounded, color: color, size: 12),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                text,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSquircleAppTile({
     required Widget iconWidget,
     required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return _AnimatedAppTile(
+      iconWidget: iconWidget,
+      label: label,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      hoverColor: Colors.white.withValues(alpha: 0.1),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          iconWidget,
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+    );
+  }
+}
+
+class _AnimatedAppTile extends StatefulWidget {
+  final Widget iconWidget;
+  final String label;
+  final VoidCallback onTap;
+
+  const _AnimatedAppTile({
+    required this.iconWidget,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedAppTile> createState() => _AnimatedAppTileState();
+}
+
+class _AnimatedAppTileState extends State<_AnimatedAppTile> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final double scale = _isPressed
+        ? 0.92
+        : (_isHovered
+            ? 1.08
+            : 1.0);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _isPressed = false;
+      }),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: scale,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            decoration: BoxDecoration(
+              color: _isHovered
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: _isHovered
+                    ? const Color(0xFF00BFA5).withValues(alpha: 0.4)
+                    : Colors.transparent,
+                width: 1.2,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF00BFA5).withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: _isHovered
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF00BFA5)
+                                  .withValues(alpha: 0.5),
+                              blurRadius: 14,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: widget.iconWidget,
+                ),
+                const SizedBox(height: 6),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 180),
+                  style: TextStyle(
+                    color: _isHovered ? const Color(0xFF00BFA5) : Colors.white70,
+                    fontSize: 11,
+                    fontWeight: _isHovered ? FontWeight.bold : FontWeight.w500,
+                    shadows: _isHovered
+                        ? [
+                            Shadow(
+                              color: const Color(0xFF00BFA5)
+                                  .withValues(alpha: 0.8),
+                              blurRadius: 8,
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
+
