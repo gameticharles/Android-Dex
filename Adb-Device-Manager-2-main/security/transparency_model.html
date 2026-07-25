@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ADB Device Manager Transparency Report — Technical details on connections, third-party libraries, VirusTotal audits, and independent verification instructions.">
+    <meta name="author" content="Shrey113">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="transparency_model.css">
+    <title>Transparency Report — ADB Device Manager</title>
+    <script>
+        // Set theme as early as possible to prevent flashing
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="trust_center.html" class="logo">
+                <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                    class="logo-icon" alt="ADB Device Manager" width="32" height="32">
+                <span>ADB Device Manager</span>
+            </a>
+            <nav class="nav">
+                <a href="../pages/features.html" class="nav-link">Features</a>
+                <a href="../docs/Docs.html" class="nav-link">Docs</a>
+                <a href="../pages/support.html" class="nav-link">Support</a>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="hero">
+            <h1 class="hero-title">Transparency Report</h1>
+            <p class="hero-subtitle">Independent verification steps, dependencies, and zero-collection audits.</p>
+        </section>
+
+        <!-- Summary Badges: Scannability -->
+        <div class="summary-badges">
+            <div class="summary-badge-item">
+                <i data-lucide="shield-check"></i>
+                <span>Zero Telemetry</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="shield-check"></i>
+                <span>Zero Trackers</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="shield-check"></i>
+                <span>Auditable Traffic</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="shield-check"></i>
+                <span>VirusTotal Verified</span>
+            </div>
+        </div>
+
+        <!-- Page Summary Metadata Block -->
+        <div class="page-summary-block">
+            <div class="summary-index">
+                <h4>In this document</h4>
+                <ul>
+                    <li><a href="#non-collection">Non-Collection Matrix</a></li>
+                    <li><a href="#network-profile">Network Activity</a></li>
+                    <li><a href="#dependencies">Open Source SDKs</a></li>
+                    <li><a href="#wireshark-guide">Wireshark Audit Guide</a></li>
+                    <li><a href="#changelog">Privacy Changelog</a></li>
+                </ul>
+            </div>
+            <div class="summary-meta">
+                <span>Reading Time</span>
+                <strong>3 min</strong>
+            </div>
+        </div>
+
+        <!-- Section 1: Non-Collection Matrix -->
+        <section class="section" id="non-collection">
+            <div class="section-header">
+                <div class="section-num">01</div>
+                <h2 class="section-title">Data Non-Collection Matrix</h2>
+            </div>
+            <div class="section-content">
+                <p>We declare and guarantee that the following tracking mechanism classes and modules are completely
+                    absent from both our companion Android codebase and Windows desktop runtime:</p>
+
+                <div class="non-collection-list">
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Telemetry Engines</h4>
+                            <p>No background event trackers, usage triggers, or heartbeat logs are compiled.</p>
+                        </div>
+                    </div>
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Analytics Platforms</h4>
+                            <p>No integrations with Google Analytics, Firebase Analytics, Mixpanel, or other metrics
+                                SDKs.</p>
+                        </div>
+                    </div>
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Crash Reporting SDKs</h4>
+                            <p>No automated crash reporters (like Crashlytics or Sentry). Stack traces remain strictly
+                                on local log files.</p>
+                        </div>
+                    </div>
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Advertising Frameworks</h4>
+                            <p>No mobile ads SDKs, tracking pixels, device identifier hashes, or cookie brokers are
+                                loaded.</p>
+                        </div>
+                    </div>
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Cloud Storage Vaults</h4>
+                            <p>No connections to remote database management systems or cloud storage buckets.</p>
+                        </div>
+                    </div>
+                    <div class="non-collection-item">
+                        <i data-lucide="x"></i>
+                        <div>
+                            <h4>Third-party Tracking SDKs</h4>
+                            <p>Only vanilla Flutter packages and native platform plugins are imported, none of which
+                                collect telemetry.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 2: Network Activity Profile -->
+        <section class="section" id="network-profile">
+            <div class="section-header">
+                <div class="section-num">02</div>
+                <h2 class="section-title">Network Activity Profile</h2>
+            </div>
+            <div class="section-content">
+                <p>The application only opens connections on your local network boundaries. The exact connection profile
+                    is documented below:</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Destination / Action</th>
+                                <th>Protocol / Port</th>
+                                <th>Trigger Conditions</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>127.0.0.1</code> (Localhost)</td>
+                                <td>TCP / Dynamic loopback ports</td>
+                                <td>Screen mirroring, local desktop app client control</td>
+                                <td>Internal host machine only</td>
+                            </tr>
+                            <tr>
+                                <td>Local Wi-Fi Subnet (e.g. <code>192.168.x.x</code>)</td>
+                                <td>WebSocket &amp; HTTP (mDNS Discovery)</td>
+                                <td>Connecting wirelessly to your companion Android app</td>
+                                <td>Local network only (packets never cross the router)</td>
+                            </tr>
+                            <tr>
+                                <td><code>api.github.com</code> (GitHub Releases)</td>
+                                <td>HTTPS / Port 443</td>
+                                <td>Manual trigger to check for application updates</td>
+                                <td>Outgoing only (only fetches public release text metadata)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 3: Open-Source Components & SDKs -->
+        <section class="section" id="dependencies">
+            <div class="section-header">
+                <div class="section-num">03</div>
+                <h2 class="section-title">Open-Source Components &amp; Libraries</h2>
+            </div>
+            <div class="section-content">
+                <p>Our solution utilizes leading open-source frameworks. You can audit their source repositories
+                    directly to confirm their safety profile:</p>
+                <div class="deps-list">
+                    <div class="deps-item">
+                        <div class="deps-header">
+                            <i data-lucide="package"></i>
+                            <h4>ADB (Android Debug Bridge)</h4>
+                            <span class="status-badge"><i data-lucide="shield-check"></i> Standard Google Utility</span>
+                        </div>
+                        <p>Used to send low-level instructions to the Android OS over USB or TCP. No tracking is
+                            present.</p>
+                    </div>
+                    <div class="deps-item">
+                        <div class="deps-header">
+                            <i data-lucide="package"></i>
+                            <h4>scrcpy (Screen Copy)</h4>
+                            <span class="status-badge"><i data-lucide="shield-check"></i> Open Source Engine</span>
+                        </div>
+                        <p>Provides highly-optimized H.264 screen mirroring. Runs entirely locally on your machine and
+                            phone.</p>
+                    </div>
+                    <div class="deps-item">
+                        <div class="deps-header">
+                            <i data-lucide="package"></i>
+                            <h4>Flutter SDK</h4>
+                            <span class="status-badge"><i data-lucide="shield-check"></i> UI Framework</span>
+                        </div>
+                        <p>Used for rendering the cross-platform frontend interfaces using hardware acceleration.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 4: VirusTotal Security Audits -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-num">04</div>
+                <h2 class="section-title">VirusTotal Audits</h2>
+            </div>
+            <div class="section-content">
+                <p>Every compiled build release is automatically submitted to VirusTotal to check against 70+ antivirus
+                    engines (including Windows Defender, Kaspersky, and Bitdefender) to guarantee clean, signature-safe
+                    executables.</p>
+                <div class="clean-note">
+                    <i data-lucide="check-square"></i>
+                    <span>All hash values and report logs are archived publicly. You can audit reports directly on our
+                        <a href="../pages/security_pages/virustotal_reports.html">VirusTotal Reports Page</a>.</span>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 5: Independent Verification Instructions -->
+        <section class="section" id="wireshark-guide">
+            <div class="section-header">
+                <div class="section-num">05</div>
+                <h2 class="section-title">Independent Verification Guide (Wireshark Audit)</h2>
+            </div>
+            <div class="section-content">
+                <p>You do not need to take our word for it. You can independently verify that the application makes no
+                    external internet connections by following these steps:</p>
+                <ul class="clean-list">
+                    <li>
+                        <i data-lucide="chevron-right"></i>
+                        <div>
+                            <strong>Step 1: Install Wireshark</strong>
+                            <span>Download and install the open-source network analyzer <a
+                                    href="https://www.wireshark.org/" target="_blank" rel="noopener"
+                                    style="color: var(--color-primary); text-decoration: none;">Wireshark</a>.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="chevron-right"></i>
+                        <div>
+                            <strong>Step 2: Bind to Interface</strong>
+                            <span>Open Wireshark and double-click your active Wi-Fi or Ethernet network adapter.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="chevron-right"></i>
+                        <div>
+                            <strong>Step 3: Filter Local Traffic</strong>
+                            <span>Set a capture filter to display only non-local traffic. Example query:
+                                <code>ip.src == [your_pc_ip] &amp;&amp; !ip.dst == 192.168.0.0/16</code>.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="chevron-right"></i>
+                        <div>
+                            <strong>Step 4: Launch &amp; Mirror</strong>
+                            <span>Run ADB Device Manager, connect your Android device, and perform mirroring and file
+                                transfers.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="chevron-right"></i>
+                        <div>
+                            <strong>Step 5: Audit Log traces</strong>
+                            <span>Confirm that no packets from the application process travel to external public IP
+                                addresses.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 6: Future Roadmap & Reproducibility -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-num">06</div>
+                <h2 class="section-title">Future Reproducible Builds Roadmap</h2>
+            </div>
+            <div class="section-content">
+                <p>Our development roadmap includes implementing reproducible build pipelines. This will enable
+                    developers to download our source code, compile the application binaries locally using standard
+                    toolchains, and verify that their locally-compiled file hash matches our distributed installer
+                    hashes exactly.</p>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 7: Security & Privacy Changelog -->
+        <section class="section" id="changelog">
+            <div class="section-header">
+                <div class="section-num">07</div>
+                <h2 class="section-title">Security &amp; Privacy Changelog</h2>
+            </div>
+            <div class="section-content">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>Release Date</th>
+                                <th>Security/Privacy Modifications</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>v1.1</td>
+                                <td>January 2026</td>
+                                <td>Transitioned Wi-Fi connections to TLS sockets to encrypt traffic within shared local
+                                    networks.</td>
+                            </tr>
+                            <tr>
+                                <td>v1.0</td>
+                                <td>December 2024</td>
+                                <td>First stable release. Completed security design audits, removed remote debug check
+                                    heartbeats, and set up the VirusTotal scanner pipeline.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div class="doc-info">
+            <div class="doc-info-item"><span>Last Updated</span><strong>December 2024</strong></div>
+            <div class="doc-info-item"><span>Version</span><strong>1.2</strong></div>
+        </div>
+
+        <div class="related-link">
+            <p>See also: <a href="trust_center.html">Trust Center</a> | <a href="security_model.html">Security Model
+                    →</a></p>
+        </div>
+    </main>
+
+    <link rel="stylesheet" href="../pages/footer.css">
+    <footer class="footer">
+        <!-- Main Footer Content -->
+        <div class="footer-main">
+            <!-- Contact Column -->
+            <div class="footer-contact-section">
+                <h3 class="footer-column-title">Contact</h3>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"
+                                fill="currentColor" />
+                        </svg>
+                        <span>Repository</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/issues" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        </svg>
+                        <span>Issues</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                        </svg>
+                        <span>App update</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Products Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Products</h3>
+                <div class="footer-links">
+                    <a href="../windows_download.html">Windows App</a>
+                    <a href="../android_download.html">Android App</a>
+                    <a href="../pages/features.html">All Features</a>
+                </div>
+            </div>
+
+            <!-- Resources Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Resources</h3>
+                <div class="footer-links">
+                    <a href="../docs/Docs.html">Documentation</a>
+                    <a href="../pages/Developers.html">Developers</a>
+                    <a href="../pages/security_pages/virustotal_reports.html">VirusTotal</a>
+                </div>
+            </div>
+
+            <!-- Security Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Security</h3>
+                <div class="footer-links">
+                    <a href="trust_center.html">Trust Center</a>
+                    <a href="privacy_policy.html">Privacy Policy</a>
+                    <a href="security_model.html">Security Model</a>
+                    <a href="transparency_model.html">Transparency Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p class="footer-copyright">© 2025 <a href="https://github.com/Shrey113">Shrey113</a>. All rights reserved.
+            </p>
+            <div class="footer-bottom-links">
+                <a href="privacy_policy.html">Privacy Policy</a>
+                <a href="../pages/security_pages/app_terms.html">App Terms</a>
+                <a href="../pages/support.html">Support &amp; FAQ</a>
+            </div>
+        </div>
+
+        <!-- Gradient Border -->
+        <div class="footer-gradient-border"></div>
+    </footer>
+
+    <!-- CDN Lucide Icons initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Theme Toggle Click Handler
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

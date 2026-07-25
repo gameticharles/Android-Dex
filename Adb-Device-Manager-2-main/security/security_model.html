@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ADB Device Manager Security Model — Detailed architecture, communication interfaces, trust boundaries, and threat model.">
+    <meta name="author" content="Shrey113">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="security_model.css">
+    <title>Security Model — ADB Device Manager</title>
+    <script>
+        // Set theme as early as possible to prevent flashing
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="trust_center.html" class="logo">
+                <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                    class="logo-icon" alt="ADB Device Manager" width="32" height="32">
+                <span>ADB Device Manager</span>
+            </a>
+            <nav class="nav">
+                <a href="../pages/features.html" class="nav-link">Features</a>
+                <a href="../docs/Docs.html" class="nav-link">Docs</a>
+                <a href="../pages/support.html" class="nav-link">Support</a>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="hero">
+            <h1 class="hero-title">Security Model</h1>
+            <p class="hero-subtitle">How ADB Device Manager is architected to keep your operations and assets secure.</p>
+        </section>
+
+        <!-- Summary Badges: Scannability -->
+        <div class="summary-badges">
+            <div class="summary-badge-item">
+                <i data-lucide="shield-check"></i>
+                <span>Offline Execution</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="server-off"></i>
+                <span>No Cloud Servers</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="cable"></i>
+                <span>Direct Local Bridge</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="fingerprint"></i>
+                <span>Local Verification</span>
+            </div>
+        </div>
+
+        <!-- Page Summary Metadata Block -->
+        <div class="page-summary-block">
+            <div class="summary-index">
+                <h4>In this document</h4>
+                <ul>
+                    <li><a href="#offline-architecture">Offline Architecture</a></li>
+                    <li><a href="#trust-boundaries">Trust Boundaries</a></li>
+                    <li><a href="#channels-encryption">Channels &amp; Encryption</a></li>
+                    <li><a href="#local-storage">LocalStorage Protection</a></li>
+                    <li><a href="#threat-model">Threat Model</a></li>
+                </ul>
+            </div>
+            <div class="summary-meta">
+                <span>Reading Time</span>
+                <strong>3 min</strong>
+            </div>
+        </div>
+
+        <!-- Section 1: Architecture -->
+        <section class="section" id="offline-architecture">
+            <div class="section-header">
+                <div class="section-num">01</div>
+                <h2 class="section-title">Offline-First &amp; Cloudless Architecture</h2>
+            </div>
+            <div class="section-content">
+                <p>The core security mechanism of ADB Device Manager is its isolation from remote infrastructures. We run no remote servers for data transmission, logic processing, or caching. Any operation, control flow, or asset stream is kept strictly within your physical workspace boundaries.</p>
+                <div class="architecture-diagram">
+                    <div class="diagram-flow">
+                        <div class="diagram-box primary">
+                            <h4>Windows Host</h4>
+                            <p>Local Desktop App</p>
+                        </div>
+                        <span class="diagram-arrow">⟷</span>
+                        <div class="diagram-box">
+                            <h4>USB Cable / LAN</h4>
+                            <p>Direct Connection</p>
+                        </div>
+                        <span class="diagram-arrow">⟷</span>
+                        <div class="diagram-box primary">
+                            <h4>Android Target</h4>
+                            <p>Companion App</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 2: Trust Boundaries -->
+        <section class="section" id="trust-boundaries">
+            <div class="section-header">
+                <div class="section-num">02</div>
+                <h2 class="section-title">Trust Boundaries &amp; Execution</h2>
+            </div>
+            <div class="section-content">
+                <p>Understanding trust boundaries is vital to auditing our tool's exposure surface:</p>
+                <ul class="clean-list">
+                    <li>
+                        <i data-lucide="shield"></i>
+                        <div>
+                            <strong>Windows Execution Boundary</strong>
+                            <span>The application runs inside user-mode constraints on Windows. It reads and writes preferences files only inside designated app folders.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="shield"></i>
+                        <div>
+                            <strong>Android Debug Bridge (ADB) Boundary</strong>
+                            <span>Screen mirroring and shell control features rely on ADB binaries. Enabling USB debugging is a deliberate developer setting that runs commands client-side under your Android OS permissions scope.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="shield"></i>
+                        <div>
+                            <strong>Local Network Boundary</strong>
+                            <span>WebSocket listeners bind strictly to local sockets. Ports are negotiated dynamically and do not accept incoming sessions from outside the local subnet.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 3: Communication & Encryption -->
+        <section class="section" id="channels-encryption">
+            <div class="section-header">
+                <div class="section-num">03</div>
+                <h2 class="section-title">Communication Channels &amp; Encryption</h2>
+            </div>
+            <div class="section-content">
+                <p>Communication occurs over two physical modes, configured dynamically based on your connection preference:</p>
+                <div class="comm-list">
+                    <div class="comm-item">
+                        <i data-lucide="cable"></i>
+                        <div>
+                            <h4>ADB Mode (USB Bridge)</h4>
+                            <p>Commands and video frames travel over a physical USB cable using ADB port-forwarding loopbacks. Data is transmitted directly via system-level sockets on the host OS, isolated from any network interfaces.</p>
+                        </div>
+                    </div>
+                    <div class="comm-item">
+                        <i data-lucide="wifi"></i>
+                        <div>
+                            <h4>App Mode (LAN Bridge)</h4>
+                            <p>Uses local WebSocket and HTTP connections to communicate over your local Wi-Fi router. Connections require discovery via local mDNS. Where supported, communication is encrypted using local TLS sockets to protect packets on shared home or office networks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 4: Local Storage Protection -->
+        <section class="section" id="local-storage">
+            <div class="section-header">
+                <div class="section-num">04</div>
+                <h2 class="section-title">Local Storage Security</h2>
+            </div>
+            <div class="section-content">
+                <p>Settings profiles, paired hardware identifiers, and customization configs are saved directly to the local Windows user profile directory. No database engines, background database daemons, or tracking vaults are deployed. Volatile elements (such as notification caches or video frame buffers) are stored exclusively in temporary virtual memory (RAM) and destroyed upon closure of the connection.</p>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 5: Offline License Verification -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-num">05</div>
+                <h2 class="section-title">Premium License Security</h2>
+            </div>
+            <div class="section-content">
+                <p>Premium features utilize a cryptographic, offline-first license verification model. Validation keys are checked locally on the host machine using standard cryptographic signature checks. No check-ins with verification servers occur during routine use, preserving complete user confidentiality and offline readiness.</p>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 6: Threat Model & Limitations -->
+        <section class="section" id="threat-model">
+            <div class="section-header">
+                <div class="section-num">06</div>
+                <h2 class="section-title">Threat Model &amp; Limitations</h2>
+            </div>
+            <div class="section-content">
+                <div class="threat-list">
+                    <div class="threat-group">
+                        <h4 class="protects-title"><i data-lucide="check-circle"></i> Protects Against</h4>
+                        <ul class="clean-bullet-list">
+                            <li>Cloud data breaches and leaks</li>
+                            <li>Third-party data sharing and mining</li>
+                            <li>Unauthorized remote network access</li>
+                            <li>Data tracking and advertising profiling</li>
+                        </ul>
+                    </div>
+                    <div class="threat-group">
+                        <h4 class="limits-title"><i data-lucide="alert-triangle"></i> Security Limitations</h4>
+                        <ul class="clean-bullet-list">
+                            <li>Compromised local hosts or target devices</li>
+                            <li>Uncontrolled physical access to hardware</li>
+                            <li>Insecure public Wi-Fi networks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="doc-info">
+            <div class="doc-info-item"><span>Last Updated</span><strong>December 2024</strong></div>
+            <div class="doc-info-item"><span>Version</span><strong>1.2</strong></div>
+        </div>
+
+        <div class="related-link">
+            <p>To verify our security claims independently, see <a href="transparency_model.html">Transparency Report →</a></p>
+        </div>
+    </main>
+
+    <link rel="stylesheet" href="../pages/footer.css">
+    <footer class="footer">
+        <!-- Main Footer Content -->
+        <div class="footer-main">
+            <!-- Contact Column -->
+            <div class="footer-contact-section">
+                <h3 class="footer-column-title">Contact</h3>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"
+                                fill="currentColor" />
+                        </svg>
+                        <span>Repository</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/issues" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        </svg>
+                        <span>Issues</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                        </svg>
+                        <span>App update</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Products Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Products</h3>
+                <div class="footer-links">
+                    <a href="../windows_download.html">Windows App</a>
+                    <a href="../android_download.html">Android App</a>
+                    <a href="../pages/features.html">All Features</a>
+                </div>
+            </div>
+
+            <!-- Resources Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Resources</h3>
+                <div class="footer-links">
+                    <a href="../docs/Docs.html">Documentation</a>
+                    <a href="../pages/Developers.html">Developers</a>
+                    <a href="../pages/security_pages/virustotal_reports.html">VirusTotal</a>
+                </div>
+            </div>
+
+            <!-- Security Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Security</h3>
+                <div class="footer-links">
+                    <a href="trust_center.html">Trust Center</a>
+                    <a href="privacy_policy.html">Privacy Policy</a>
+                    <a href="security_model.html">Security Model</a>
+                    <a href="transparency_model.html">Transparency Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p class="footer-copyright">© 2025 <a href="https://github.com/Shrey113">Shrey113</a>. All rights reserved.</p>
+            <div class="footer-bottom-links">
+                <a href="privacy_policy.html">Privacy Policy</a>
+                <a href="../pages/security_pages/app_terms.html">App Terms</a>
+                <a href="../pages/support.html">Support &amp; FAQ</a>
+            </div>
+        </div>
+
+        <!-- Gradient Border -->
+        <div class="footer-gradient-border"></div>
+    </footer>
+
+    <!-- CDN Lucide Icons initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Theme Toggle Click Handler
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

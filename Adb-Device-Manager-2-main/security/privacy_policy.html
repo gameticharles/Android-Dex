@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ADB Device Manager Privacy Policy — Learn about what data we access, how it is processed, and your control over your personal information.">
+    <meta name="author" content="Shrey113">
+    <meta name="keywords" content="privacy policy, ADB, device manager, offline, privacy, data protection, user rights">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="privacy_policy.css">
+    <title>Privacy Policy — ADB Device Manager</title>
+    <script>
+        // Set theme as early as possible to prevent flashing
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="trust_center.html" class="logo">
+                <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                    class="logo-icon" alt="ADB Device Manager" width="32" height="32">
+                <span>ADB Device Manager</span>
+            </a>
+            <nav class="nav">
+                <a href="../pages/features.html" class="nav-link">Features</a>
+                <a href="../docs/Docs.html" class="nav-link">Docs</a>
+                <a href="../pages/support.html" class="nav-link">Support</a>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="hero">
+            <h1 class="hero-title">Privacy Policy</h1>
+            <p class="hero-subtitle">What personal data we access and what happens to it during operation.</p>
+        </section>
+
+        <!-- Summary Badges: Scannability -->
+        <div class="summary-badges">
+            <div class="summary-badge-item">
+                <i data-lucide="shield"></i>
+                <span>Data Accessed: Local Only</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="upload-cloud"></i>
+                <span>Uploads: None</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="users"></i>
+                <span>Sharing: None</span>
+            </div>
+            <div class="summary-badge-item">
+                <i data-lucide="database"></i>
+                <span>Persistence: None</span>
+            </div>
+        </div>
+
+        <!-- Page Summary Metadata Block -->
+        <div class="page-summary-block">
+            <div class="summary-index">
+                <h4>In this document</h4>
+                <ul>
+                    <li><a href="#data-accessed">Data Accessed</a></li>
+                    <li><a href="#permissions">Permissions</a></li>
+                    <li><a href="#storage">Storage Details</a></li>
+                    <li><a href="#user-rights">User Rights</a></li>
+                </ul>
+            </div>
+            <div class="summary-meta">
+                <span>Reading Time</span>
+                <strong>3 min</strong>
+            </div>
+        </div>
+
+        <!-- Section 1: Data Access -->
+        <section class="section" id="data-accessed">
+            <div class="section-header">
+                <div class="section-num">01</div>
+                <h2 class="section-title">Data Accessed &amp; Handled</h2>
+            </div>
+            <div class="section-content">
+                <p>To provide device management features like SMS reply, call logging, and notification mirroring, ADB Device Manager requires local access to specific data types on your Android device. The data is processed in real time to draw interface items on your PC screen.</p>
+                <div class="data-list-grid">
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="users"></i>
+                            <h4>Contacts</h4>
+                        </div>
+                        <p>Accesses names and contact photos to identify notification senders and incoming callers.</p>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="message-square"></i>
+                            <h4>SMS Messages</h4>
+                        </div>
+                        <p>Accesses message text and metadata to display conversations and dispatch replies from the desktop app.</p>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="phone"></i>
+                            <h4>Call Logs</h4>
+                        </div>
+                        <p>Reads call history to display dial logs and intercepts active calling states for desktop popups.</p>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="bell"></i>
+                            <h4>Notifications</h4>
+                        </div>
+                        <p>Intercepts notification alerts (app title, text, icon) to mirror them instantly to the Windows workspace.</p>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="folder-open"></i>
+                            <h4>Files &amp; Storage</h4>
+                        </div>
+                        <p>Accesses storage to read and write folders during manual file drag-and-drop transfers.</p>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-header">
+                            <i data-lucide="smartphone"></i>
+                            <h4>Device Info</h4>
+                        </div>
+                        <p>Reads serial numbers, battery health, and OS versions to correctly link and identify target hardware profiles.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 2: Permissions Explanation -->
+        <section class="section" id="permissions">
+            <div class="section-header">
+                <div class="section-num">02</div>
+                <h2 class="section-title">Permissions &amp; Why They Are Needed</h2>
+            </div>
+            <div class="section-content">
+                <p>The companion Android app requests standard Android system permissions. Revoking these permissions disables their corresponding feature but does not prevent you from using the rest of the application.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Permission</th>
+                                <th>Requested For</th>
+                                <th>Impact if Revoked</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Notification Access</td>
+                                <td>Mirroring alert items to PC</td>
+                                <td>Notifications are not shown on PC</td>
+                            </tr>
+                            <tr>
+                                <td>READ_SMS / SEND_SMS</td>
+                                <td>Viewing logs and writing messages</td>
+                                <td>SMS features disabled</td>
+                            </tr>
+                            <tr>
+                                <td>READ_CONTACTS</td>
+                                <td>Resolving phone numbers to names</td>
+                                <td>Logs show raw numbers instead of names</td>
+                            </tr>
+                            <tr>
+                                <td>READ_CALL_LOG / PHONE_STATE</td>
+                                <td>Showing call history and caller ID</td>
+                                <td>Call dashboard disabled</td>
+                            </tr>
+                            <tr>
+                                <td>RECORD_AUDIO</td>
+                                <td>Forwarding system audio streams</td>
+                                <td>No sound while mirroring screen</td>
+                            </tr>
+                            <tr>
+                                <td>READ/WRITE STORAGE</td>
+                                <td>Copying files between host and target</td>
+                                <td>File manager transfers disabled</td>
+                            </tr>
+                            <tr>
+                                <td>LOCAL_NETWORK / WIFI</td>
+                                <td>Connecting Android to Windows PC</td>
+                                <td>Unable to connect wirelessly over Wi-Fi</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 3: Data Storage & Persistence -->
+        <section class="section" id="storage">
+            <div class="section-header">
+                <div class="section-num">03</div>
+                <h2 class="section-title">Data Storage, Uploads &amp; Sharing</h2>
+            </div>
+            <div class="section-content">
+                <p>We believe in absolute data minimization. Our data handling rules are simple:</p>
+                <ul class="clean-list">
+                    <li>
+                        <i data-lucide="database"></i>
+                        <div>
+                            <strong>No Remote Storage</strong>
+                            <span>None of your personal data is saved to cloud servers or databases. It remains entirely on your devices.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="upload-cloud"></i>
+                        <div>
+                            <strong>No Remote Uploads</strong>
+                            <span>No files, SMS database copies, or screen feeds are ever uploaded. All processing is kept local.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="users"></i>
+                        <div>
+                            <strong>No Third-Party Sharing</strong>
+                            <span>Since we do not collect or upload your information, it is impossible for us to share, license, or sell it to any third parties.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="cpu"></i>
+                        <div>
+                            <strong>Volatile Temporary Memory</strong>
+                            <span>Real-time packets like video buffers and notification lists are stored in volatile RAM. They are permanently erased the moment you disconnect or terminate the app.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="settings"></i>
+                        <div>
+                            <strong>Persistent Local Configs</strong>
+                            <span>General settings (port numbers, paired device IDs, dark mode settings) are saved in local settings files on your PC disk. No personal database files are kept.</span>
+                        </div>
+                    </li>
+                </ul>
+                <div class="clean-note">
+                    <i data-lucide="info"></i>
+                    <span>For technical details about how our local network sockets and USB interfaces operate, refer to the <a href="security_model.html">Security Model</a>.</span>
+                </div>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 4: User Rights & Control -->
+        <section class="section" id="user-rights">
+            <div class="section-header">
+                <div class="section-num">04</div>
+                <h2 class="section-title">User Rights &amp; Data Control</h2>
+            </div>
+            <div class="section-content">
+                <p>You have direct, absolute command over how the app interacts with your data:</p>
+                <ul class="clean-list">
+                    <li>
+                        <i data-lucide="settings"></i>
+                        <div>
+                            <strong>Revoke Permissions</strong>
+                            <span>You can manage or revoke any Android permission at any time through the system Settings panel.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="trash-2"></i>
+                        <div>
+                            <strong>Delete Local Preferences</strong>
+                            <span>You can wipe all paired device configurations and options simply by clearing app data on your phone or deleting the preferences file on your PC.</span>
+                        </div>
+                    </li>
+                    <li>
+                        <i data-lucide="eye"></i>
+                        <div>
+                            <strong>Inspect Traffic</strong>
+                            <span>You have the right to audit and verify that no uploads are happening. Step-by-step guides on network sniffing are detailed in our <a href="transparency_model.html">Transparency Report</a>.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        <div class="section-divider"></div>
+
+        <!-- Section 5: Changes to This Policy -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-num">05</div>
+                <h2 class="section-title">Changes to This Policy</h2>
+            </div>
+            <div class="section-content">
+                <p>This policy may be amended to reflect modifications to Android permission frameworks or new local utility capabilities. We will post any updates here, maintaining version histories in the documentation. We encourage users to verify our commit logs in the official repository.</p>
+            </div>
+        </section>
+
+        <div class="doc-info">
+            <div class="doc-info-item">
+                <span>Last Updated</span>
+                <strong>January 2026</strong>
+            </div>
+            <div class="doc-info-item">
+                <span>Document Version</span>
+                <strong>1.2</strong>
+            </div>
+            <div class="doc-info-item">
+                <span>Effective Date</span>
+                <strong>January 1, 2026</strong>
+            </div>
+        </div>
+
+        <div class="related-link">
+            <p>See also: <a href="trust_center.html">Trust Center</a> | <a href="security_model.html">Security Model</a> | <a href="transparency_model.html">Transparency Report</a></p>
+        </div>
+    </main>
+
+    <link rel="stylesheet" href="../pages/footer.css">
+    <footer class="footer">
+        <!-- Main Footer Content -->
+        <div class="footer-main">
+            <!-- Contact Column -->
+            <div class="footer-contact-section">
+                <h3 class="footer-column-title">Contact</h3>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"
+                                fill="currentColor" />
+                        </svg>
+                        <span>Repository</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/issues" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        </svg>
+                        <span>Issues</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                        </svg>
+                        <span>App update</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Products Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Products</h3>
+                <div class="footer-links">
+                    <a href="../windows_download.html">Windows App</a>
+                    <a href="../android_download.html">Android App</a>
+                    <a href="../pages/features.html">All Features</a>
+                </div>
+            </div>
+
+            <!-- Resources Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Resources</h3>
+                <div class="footer-links">
+                    <a href="../docs/Docs.html">Documentation</a>
+                    <a href="../pages/Developers.html">Developers</a>
+                    <a href="../pages/security_pages/virustotal_reports.html">VirusTotal</a>
+                </div>
+            </div>
+
+            <!-- Security Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Security</h3>
+                <div class="footer-links">
+                    <a href="trust_center.html">Trust Center</a>
+                    <a href="privacy_policy.html">Privacy Policy</a>
+                    <a href="security_model.html">Security Model</a>
+                    <a href="transparency_model.html">Transparency Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p class="footer-copyright">© 2025 <a href="https://github.com/Shrey113">Shrey113</a>. All rights reserved.</p>
+            <div class="footer-bottom-links">
+                <a href="privacy_policy.html">Privacy Policy</a>
+                <a href="../pages/security_pages/app_terms.html">App Terms</a>
+                <a href="../pages/support.html">Support &amp; FAQ</a>
+            </div>
+        </div>
+
+        <!-- Gradient Border -->
+        <div class="footer-gradient-border"></div>
+    </footer>
+
+    <!-- CDN Lucide Icons initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Theme Toggle Click Handler
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

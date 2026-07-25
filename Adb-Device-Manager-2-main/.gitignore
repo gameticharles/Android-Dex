@@ -1,0 +1,43 @@
+# ------------------------------------------------------------
+# 🧹 Minimal .gitignore for ADB Device Manager Project
+# ------------------------------------------------------------
+
+# ⚙️ Windows Executables and Installers
+adb_devices.exe
+adb_devices.iss
+adb_devices_admin.iss
+adb_devices_admin_re_test.iss
+inno_setup_sources.iss.txt
+
+# 🐍 Helper scripts (optional)
+set.py
+
+# (Ignores all images, icons, mp4s, etc.)
+
+# 🧪 Logs or temp files
+*.log
+*.tmp
+*.bak
+
+# 🧰 Build artifacts (if generated)
+dist/
+build/
+output/
+release/
+temp_data/
+
+# 🧩 Node / Web build caches (if you ever use them)
+node_modules/
+*.map
+
+# 🧾 System files
+.DS_Store
+Thumbs.db
+
+# 🧾 OS / Editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+.vscode

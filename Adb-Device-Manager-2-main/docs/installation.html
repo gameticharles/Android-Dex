@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ADB Device Manager Installation Guide — Step-by-step instructions to set up the Windows desktop client, Android companion app, and Linux packages.">
+    <meta name="author" content="Shrey113">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="installation.css">
+    <title>Installation Guide — ADB Device Manager</title>
+    <script>
+        // Set theme as early as possible to prevent flashing
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="../index.html" class="logo">
+                <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                    class="logo-icon" alt="ADB Device Manager" width="32" height="32">
+                <span>ADB Device Manager</span>
+            </a>
+            <nav class="nav">
+                <a href="../pages/features.html" class="nav-link">Features</a>
+                <a href="Docs.html" class="nav-link">Docs</a>
+                <a href="../pages/support.html" class="nav-link">Support</a>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <section class="hero">
+            <h1 class="hero-title">Installation Guide</h1>
+            <p class="hero-subtitle">Select your device operating system to see the tailored setup steps and connection
+                instructions.</p>
+        </section>
+
+        <!-- Platform Selector Grid -->
+        <div class="platform-selector">
+            <button class="platform-card active" data-platform="windows" id="btn-windows">
+                <img src="../images/OS/windows.png" alt="Windows" class="platform-icon">
+                <div class="platform-info">
+                    <span class="platform-name">Windows</span>
+                    <span class="platform-status">Desktop Client</span>
+                </div>
+            </button>
+            <button class="platform-card" data-platform="android" id="btn-android">
+                <img src="../images/OS/android.png" alt="Android" class="platform-icon">
+                <div class="platform-info">
+                    <span class="platform-name">Android</span>
+                    <span class="platform-status">Companion App</span>
+                </div>
+            </button>
+            <button class="platform-card" data-platform="linux" id="btn-linux">
+                <img src="../images/OS/linux.png" alt="Linux" class="platform-icon">
+                <div class="platform-info">
+                    <span class="platform-name">Linux</span>
+                    <span class="platform-status">tar.gz Bundle</span>
+                </div>
+            </button>
+            <button class="platform-card" data-platform="mac" id="btn-mac">
+                <img src="../images/OS/mac.png" alt="macOS" class="platform-icon">
+                <div class="platform-info">
+                    <span class="platform-name">macOS</span>
+                    <span class="platform-status">Coming Soon</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- ==================== WINDOWS PANEL ==================== -->
+        <div id="panel-windows" class="platform-panel active">
+            <div class="summary-badges">
+                <div class="summary-badge-item">
+                    <i data-lucide="monitor"></i>
+                    <span>Windows 10 / 11</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="shield-check"></i>
+                    <span>Offline Installer</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="cable"></i>
+                    <span>USB &amp; Wi-Fi Bridges</span>
+                </div>
+            </div>
+
+            <!-- Page Summary Block -->
+            <div class="page-summary-block">
+                <div class="summary-index">
+                    <h4>On this page</h4>
+                    <ul>
+                        <li><a href="#win-reqs">System Requirements</a></li>
+                        <li><a href="#win-install">Installation Steps</a></li>
+                        <li><a href="#win-drivers">USB Driver Fixes</a></li>
+                    </ul>
+                </div>
+                <div class="summary-meta">
+                    <span>File Type</span>
+                    <strong>adb_devices.exe</strong>
+                </div>
+            </div>
+
+            <!-- Section 1: System Requirements -->
+            <section id="win-reqs" class="section">
+                <div class="section-header">
+                    <div class="section-num">01</div>
+                    <h2 class="section-title">System Requirements</h2>
+                </div>
+                <div class="section-content">
+                    <p>Before launching the installer, verify that your computer meets the minimum hardware
+                        specifications:</p>
+                    <ul class="clean-list">
+                        <li>
+                            <i data-lucide="cpu"></i>
+                            <div>
+                                <strong>Operating System</strong>
+                                <span>Windows 10 or Windows 11 (64-bit architecture)</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="activity"></i>
+                            <div>
+                                <strong>System Memory</strong>
+                                <span>1 GB RAM minimum (4 GB or more recommended for screen mirroring
+                                    performance)</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="usb"></i>
+                            <div>
+                                <strong>Connectivity Interfaces</strong>
+                                <span>USB port for direct debugging, and Wi-Fi interface for local wireless
+                                    connections</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 2: Installation Steps -->
+            <section id="win-install" class="section">
+                <div class="section-header">
+                    <div class="section-num">02</div>
+                    <h2 class="section-title">Installation Guide</h2>
+                </div>
+                <div class="section-content">
+                    <ul class="clean-list font-spaced">
+                        <li>
+                            <i data-lucide="download"></i>
+                            <div>
+                                <strong>Step 1: Download the Executable</strong>
+                                <span>Get the latest version of <code>adb_devices.exe</code> from the <a
+                                        href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" target="_blank"
+                                        class="text-link">GitHub Releases page</a> or use our local <a
+                                        href="../windows_download.html" class="text-link">Windows Download
+                                        Hub</a>.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="play-circle"></i>
+                            <div>
+                                <strong>Step 2: Run the Installer</strong>
+                                <span>Double-click the downloaded <code>adb_devices.exe</code> file. If prompted by
+                                    Windows SmartScreen, select "More info" and then click "Run anyway" to begin
+                                    initialization.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="shield-alert"></i>
+                            <div>
+                                <strong>Step 3: Allow Firewall Access</strong>
+                                <span>During the first launch, the Windows Defender Firewall prompt will appear. Ensure
+                                    you grant private network permission so the software can discover devices on your
+                                    local Wi-Fi network.</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="clean-note">
+                        <i data-lucide="info"></i>
+                        <span>ADB Device Manager operates 100% offline. The firewall permission is purely used to
+                            establish connection between your local computer and the Android companion app via your home
+                            network router.</span>
+                    </div>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 3: Driver Installation -->
+            <section id="win-drivers" class="section">
+                <div class="section-header">
+                    <div class="section-num">03</div>
+                    <h2 class="section-title">USB Driver Configuration</h2>
+                </div>
+                <div class="section-content">
+                    <p>If your connected Android phone is not showing up in the device list, you may need to install the
+                        manufacturer-specific USB drivers on your Windows PC.</p>
+
+                    <div class="data-list-grid">
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="external-link"></i>
+                                <h4>Google USB Drivers</h4>
+                            </div>
+                            <p>Universal fallback driver compatible with most Pixel, Nexus, and OEM devices.</p>
+                            <span class="status-badge"><a href="https://developer.android.com/studio/run/win-usb"
+                                    target="_blank" class="text-link">Get Driver →</a></span>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="external-link"></i>
+                                <h4>Samsung USB Drivers</h4>
+                            </div>
+                            <p>Official USB serial drivers designed for Samsung Galaxy devices.</p>
+                            <span class="status-badge"><a href="https://developer.samsung.com/android-usb-driver"
+                                    target="_blank" class="text-link">Get Driver →</a></span>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="external-link"></i>
+                                <h4>OEM USB Directory</h4>
+                            </div>
+                            <p>Android database listing setup rules and drivers for Xiaomi, Oppo, Vivo, and OnePlus.</p>
+                            <span class="status-badge"><a href="https://developer.android.com/studio/run/oem-usb"
+                                    target="_blank" class="text-link">Get Driver →</a></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 4: Troubleshooting Links -->
+            <section class="section">
+                <div class="section-header">
+                    <div class="section-num">04</div>
+                    <h2 class="section-title">Common Fixes &amp; Help</h2>
+                </div>
+                <div class="section-content font-spaced">
+                    <ul class="clean-list">
+                        <li>
+                            <i data-lucide="help-circle"></i>
+                            <div>
+                                <strong>Device Not Detected?</strong>
+                                <span>Make sure USB debugging is turned ON in Developer Options. See the <a
+                                        href="#btn-android" class="text-link js-tab-switch"
+                                        data-target="android">Android setup tab</a> for details.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="help-circle"></i>
+                            <div>
+                                <strong>Wi-Fi Sync Issues?</strong>
+                                <span>Ensure both computer and phone are connected to the exact same Wi-Fi router
+                                    network interface.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== ANDROID PANEL ==================== -->
+        <div id="panel-android" class="platform-panel">
+            <div class="summary-badges">
+                <div class="summary-badge-item">
+                    <i data-lucide="smartphone"></i>
+                    <span>Android 7.0+</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="package"></i>
+                    <span>Companion APK</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="activity"></i>
+                    <span>Zero Data Tracking</span>
+                </div>
+            </div>
+
+            <!-- Page Summary Block -->
+            <div class="page-summary-block">
+                <div class="summary-index">
+                    <h4>On this page</h4>
+                    <ul>
+                        <li><a href="#android-reqs">Requirements</a></li>
+                        <li><a href="#android-install-steps">Install Companion App</a></li>
+                        <li><a href="#android-usb">Enable USB Debugging</a></li>
+                        <li><a href="#android-bg">Background Reliability</a></li>
+                    </ul>
+                </div>
+                <div class="summary-meta">
+                    <span>File Name</span>
+                    <strong>companion.apk</strong>
+                </div>
+            </div>
+
+            <!-- Section 1: System Requirements -->
+            <section id="android-reqs" class="section">
+                <div class="section-header">
+                    <div class="section-num">01</div>
+                    <h2 class="section-title">Requirements</h2>
+                </div>
+                <div class="section-content">
+                    <p>Verify that your Android device meets the configurations required to run the companion app:</p>
+                    <ul class="clean-list">
+                        <li>
+                            <i data-lucide="smartphone"></i>
+                            <div>
+                                <strong>Android OS Version</strong>
+                                <span>Android 7.0 (API Level 24) or higher</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="settings"></i>
+                            <div>
+                                <strong>Developer Permissions</strong>
+                                <span>USB Debugging permission enabled (required for desktop communication
+                                    client)</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="battery"></i>
+                            <div>
+                                <strong>Battery Configuration</strong>
+                                <span>Optimization disabled for companion client (highly recommended to maintain
+                                    connection)</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 2: Installation -->
+            <section id="android-install-steps" class="section">
+                <div class="section-header">
+                    <div class="section-num">02</div>
+                    <h2 class="section-title">Download &amp; Install</h2>
+                </div>
+                <div class="section-content">
+                    <ul class="clean-list font-spaced">
+                        <li>
+                            <i data-lucide="download"></i>
+                            <div>
+                                <strong>Step 1: Download the Package</strong>
+                                <span>Download the companion app client,
+                                    <code>ADB_Device_Manager_Android_Installer.apk</code>, directly via our official <a
+                                        href="../android_download.html" class="text-link">Android Download
+                                        Hub</a>.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="shield-alert"></i>
+                            <div>
+                                <strong>Step 2: Allow Unknown Sources</strong>
+                                <span>Navigate to Settings → Security and allow installation from unknown sources, or
+                                    confirm the security prompt inside your browser or file manager.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="package-check"></i>
+                            <div>
+                                <strong>Step 3: Run Setup</strong>
+                                <span>Tap the downloaded APK inside your notification tray or downloads folder. Select
+                                    "Install", wait for the package manager to finish, and open the app.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 3: USB Debugging -->
+            <section id="android-usb" class="section">
+                <div class="section-header">
+                    <div class="section-num">03</div>
+                    <h2 class="section-title">Enable USB Debugging</h2>
+                </div>
+                <div class="section-content">
+                    <p>USB Debugging is required to authenticate the local secure ADB connection between your desktop
+                        machine and your mobile device.</p>
+                    <ul class="clean-list font-spaced">
+                        <li>
+                            <i data-lucide="toggle-right"></i>
+                            <div>
+                                <strong>Step 1: Activate Developer Menu</strong>
+                                <span>Open Settings → About Phone, scroll down to find the Build Number, and tap it 7
+                                    times until a confirmation toast displays.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="toggle-right"></i>
+                            <div>
+                                <strong>Step 2: Toggle USB Debugging</strong>
+                                <span>Go back to Settings → System → Developer Options. Scroll to find USB Debugging and
+                                    toggle it ON.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="cable"></i>
+                            <div>
+                                <strong>Step 3: Authorize PC connection</strong>
+                                <span>Plug the device into your PC. Tap "Allow USB Debugging" on the popup. Select
+                                    "Always allow from this computer" to enable automatic sync.</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="clean-note">
+                        <i data-lucide="info"></i>
+                        <span>On certain OEM devices (such as Xiaomi, Redmi, Vivo, Oppo), you must also toggle "USB
+                            Debugging (Security Settings)" inside Developer Options to allow keyboard and touch
+                            inputs.</span>
+                    </div>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 4: Battery Optimization -->
+            <section id="android-bg" class="section">
+                <div class="section-header">
+                    <div class="section-num">04</div>
+                    <h2 class="section-title">Background Reliability</h2>
+                </div>
+                <div class="section-content">
+                    <p>To avoid sudden connection drops due to aggressive Android system battery management, configure
+                        these options for the companion app:</p>
+
+                    <div class="data-list-grid">
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="battery-warning"></i>
+                                <h4>Samsung Systems</h4>
+                            </div>
+                            <p>Settings → Battery &amp; Device Care → Battery → Background usage limits → Add companion
+                                to "Never sleeping apps".</p>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="battery-warning"></i>
+                                <h4>Xiaomi / MIUI</h4>
+                            </div>
+                            <p>Settings → Apps → Manage Apps → Companion App → Battery Saver → Select "No restrictions".
+                                Ensure Autostart is active.</p>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="battery-warning"></i>
+                                <h4>Oppo / Vivo / Realme</h4>
+                            </div>
+                            <p>Settings → App Management → Companion App → Power Saver → Enable "Allow background
+                                activity" &amp; "Auto-Start".</p>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <i data-lucide="battery-charging"></i>
+                                <h4>Google Pixel</h4>
+                            </div>
+                            <p>Runs standard optimization natively. No special adjustments required under vanilla
+                                Android OS.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== LINUX PANEL ==================== -->
+        <div id="panel-linux" class="platform-panel">
+            <div class="summary-badges">
+                <div class="summary-badge-item">
+                    <i data-lucide="terminal"></i>
+                    <span>Ubuntu / Debian / Fedora</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="package"></i>
+                    <span>tar.gz Package</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="cpu"></i>
+                    <span>Local Performance</span>
+                </div>
+            </div>
+
+            <!-- Page Summary Block -->
+            <div class="page-summary-block">
+                <div class="summary-index">
+                    <h4>On this page</h4>
+                    <ul>
+                        <li><a href="#linux-reqs">Requirements</a></li>
+                        <li><a href="#linux-steps">Extraction &amp; Run</a></li>
+                        <li><a href="#linux-udev">Udev Rules Configuration</a></li>
+                    </ul>
+                </div>
+                <div class="summary-meta">
+                    <span>Archive Name</span>
+                    <strong>linux_client.tar.gz</strong>
+                </div>
+            </div>
+
+            <!-- Section 1: System Requirements -->
+            <section id="linux-reqs" class="section">
+                <div class="section-header">
+                    <div class="section-num">01</div>
+                    <h2 class="section-title">Requirements</h2>
+                </div>
+                <div class="section-content">
+                    <p>Ensure your Linux box is updated and matches the following specifications:</p>
+                    <ul class="clean-list">
+                        <li>
+                            <i data-lucide="terminal"></i>
+                            <div>
+                                <strong>Operating System</strong>
+                                <span>Any modern 64-bit GNU/Linux distribution (Ubuntu 20.04+, Debian 11+, Fedora 36+,
+                                    Arch Linux)</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="cpu"></i>
+                            <div>
+                                <strong>Prerequisites</strong>
+                                <span>Installed libraries: <code>libudev</code>, <code>glibc 2.31+</code>, and package
+                                    <code>adb</code> (Android Platform Tools)</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 2: Linux steps -->
+            <section id="linux-steps" class="section">
+                <div class="section-header">
+                    <div class="section-num">02</div>
+                    <h2 class="section-title">Setup Steps</h2>
+                </div>
+                <div class="section-content">
+                    <ul class="clean-list font-spaced">
+                        <li>
+                            <i data-lucide="download"></i>
+                            <div>
+                                <strong>Step 1: Download the Tarball</strong>
+                                <span>Get <code>ADB_Device_Manager_Linux.tar.gz</code> from our GitHub releases page or the official mirrors.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="terminal"></i>
+                            <div>
+                                <strong>Step 2: Extract &amp; Navigate</strong>
+                                <span>Open a terminal and extract the tarball, then navigate into the extracted directory:</span>
+                                <div class="code-block-wrapper">
+                                    <pre class="code-box"><code>tar -xzf ADB_Device_Manager_Linux.tar.gz
+cd adb_devices</code></pre>
+                                    <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy command">
+                                        <i data-lucide="copy" class="copy-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="shield"></i>
+                            <div>
+                                <strong>Step 3: Grant Script Execution Permission</strong>
+                                <span>Enable execution permission on the launch script:</span>
+                                <div class="code-block-wrapper">
+                                    <pre class="code-box"><code>chmod +x run_adb_devices.sh</code></pre>
+                                    <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy command">
+                                        <i data-lucide="copy" class="copy-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="play"></i>
+                            <div>
+                                <strong>Step 4: Execute the Script</strong>
+                                <span>Run the application using the setup shell script:</span>
+                                <div class="code-block-wrapper">
+                                    <pre class="code-box"><code>./run_adb_devices.sh</code></pre>
+                                    <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy command">
+                                        <i data-lucide="copy" class="copy-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 3: Udev Rules -->
+            <section id="linux-udev" class="section">
+                <div class="section-header">
+                    <div class="section-num">03</div>
+                    <h2 class="section-title">Udev Configuration (USB Access)</h2>
+                </div>
+                <div class="section-content">
+                    <p>To connect to USB devices as a non-root user, ensure your account belongs to the
+                        <code>plugdev</code> user group and your system has default Android udev rules established.</p>
+                    <ul class="clean-list font-spaced">
+                        <li>
+                            <i data-lucide="shield"></i>
+                            <div>
+                                <strong>Step 1: Add User to Plugdev Group</strong>
+                                <span>Execute the following group assignment command:</span>
+                                <div class="code-block-wrapper">
+                                    <pre class="code-box"><code>sudo usermod -aG plugdev $USER</code></pre>
+                                    <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy command">
+                                        <i data-lucide="copy" class="copy-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="refresh-cw"></i>
+                            <div>
+                                <strong>Step 2: Reload Rules</strong>
+                                <span>Restart the udev daemon to load configuration changes:</span>
+                                <div class="code-block-wrapper">
+                                    <pre class="code-box"><code>sudo udevadm control --reload-rules</code></pre>
+                                    <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy command">
+                                        <i data-lucide="copy" class="copy-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="clean-note">
+                        <i data-lucide="info"></i>
+                        <span>Log out and log back in to apply your new user group permissions successfully.</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== MACOS PANEL ==================== -->
+        <div id="panel-mac" class="platform-panel">
+            <div class="summary-badges">
+                <div class="summary-badge-item">
+                    <i data-lucide="monitor"></i>
+                    <span>macOS Client</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="loader"></i>
+                    <span>Under Development</span>
+                </div>
+                <div class="summary-badge-item">
+                    <i data-lucide="cpu"></i>
+                    <span>Intel / Apple Silicon</span>
+                </div>
+            </div>
+
+            <!-- Page Summary Block -->
+            <div class="page-summary-block">
+                <div class="summary-index">
+                    <h4>On this page</h4>
+                    <ul>
+                        <li><a href="#mac-dev">Development Progress</a></li>
+                        <li><a href="#mac-notified">Get Notified</a></li>
+                    </ul>
+                </div>
+                <div class="summary-meta">
+                    <span>Release Status</span>
+                    <strong>Coming Soon</strong>
+                </div>
+            </div>
+
+            <!-- Section 1: Development -->
+            <section id="mac-dev" class="section">
+                <div class="section-header">
+                    <div class="section-num">01</div>
+                    <h2 class="section-title">Development Status</h2>
+                </div>
+                <div class="section-content">
+                    <p>We are actively working on a fully native macOS client for ADB Device Manager. The app is being
+                        optimized for both Intel chips and Apple Silicon (M1/M2/M3) architectures using hardware
+                        acceleration protocols.</p>
+                    <p>Key features in development for macOS include:</p>
+                    <ul class="clean-list">
+                        <li>
+                            <i data-lucide="chevron-right"></i>
+                            <div>
+                                <strong>Metal-Accelerated Screen Mirroring</strong>
+                                <span>Lag-free stream renders with dynamic scaling directly optimized for Retina
+                                    displays.</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i data-lucide="chevron-right"></i>
+                            <div>
+                                <strong>CoreAudio Bridge integration</strong>
+                                <span>Seamless system audio streaming from target devices using native CoreAudio
+                                    pipelines.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+            <div class="section-divider"></div>
+
+            <!-- Section 2: Get Notified -->
+            <section id="mac-notified" class="section">
+                <div class="section-header">
+                    <div class="section-num">02</div>
+                    <h2 class="section-title">Track Progress &amp; Contributions</h2>
+                </div>
+                <div class="section-content">
+                    <p>Watch and star our GitHub repository to track progress updates and get immediate alerts when the
+                        official macOS package is released.</p>
+                    <div style="margin-top: 24px;">
+                        <a href="https://github.com/Shrey113/Adb-Device-Manager-2" target="_blank"
+                            class="download-btn-github">
+                            <i data-lucide="github" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                            Star Repository on GitHub
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <!-- Main Footer Content -->
+        <div class="footer-main">
+            <!-- Contact Column -->
+            <div class="footer-contact-section">
+                <h3 class="footer-column-title">Contact</h3>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path
+                                d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"
+                                fill="currentColor" />
+                        </svg>
+                        <span>Repository</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/issues" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                            <circle cx="12" cy="12" r="3" fill="currentColor" />
+                        </svg>
+                        <span>Issues</span>
+                    </a>
+                </div>
+                <div class="footer-contact-list">
+                    <a href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" class="footer-contact-item"
+                        target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                        </svg>
+                        <span>App update</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Products Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Products</h3>
+                <div class="footer-links">
+                    <a href="../windows_download.html">Windows App</a>
+                    <a href="../android_download.html">Android App</a>
+                    <a href="../pages/features.html">All Features</a>
+                </div>
+            </div>
+
+            <!-- Resources Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Resources</h3>
+                <div class="footer-links">
+                    <a href="Docs.html">Documentation</a>
+                    <a href="../pages/Developers.html">Developers</a>
+                    <a href="../pages/security_pages/virustotal_reports.html">VirusTotal</a>
+                </div>
+            </div>
+
+            <!-- Security Column -->
+            <div class="footer-column">
+                <h3 class="footer-column-title">Security</h3>
+                <div class="footer-links">
+                    <a href="../security/trust_center.html">Trust Center</a>
+                    <a href="../security/privacy_policy.html">Privacy Policy</a>
+                    <a href="../security/security_model.html">Security Model</a>
+                    <a href="../security/transparency_model.html">Transparency Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p class="footer-copyright">© 2025 <a href="https://github.com/Shrey113">Shrey113</a>. All rights reserved.
+            </p>
+            <div class="footer-bottom-links">
+                <a href="../security/privacy_policy.html">Privacy Policy</a>
+                <a href="../pages/security_pages/app_terms.html">App Terms</a>
+                <a href="../pages/support.html">Support &amp; FAQ</a>
+            </div>
+        </div>
+
+        <!-- Gradient Border -->
+        <div class="footer-gradient-border"></div>
+    </footer>
+
+    <!-- CDN Lucide Icons initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.400.0/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Theme Toggle Click Handler
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        // Copy to Clipboard utility
+        function copyCode(button) {
+            const wrapper = button.closest('.code-block-wrapper');
+            const code = wrapper.querySelector('code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check" style="width: 14px; height: 14px;"><path d="M20 6 9 17l-5-5"/></svg>`;
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // Platform switching logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.platform-card');
+            const panels = document.querySelectorAll('.platform-panel');
+
+            function switchPlatform(platformId) {
+                // Remove active classes from all cards and panels
+                cards.forEach(c => c.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+
+                // Add active to targeted card and panel
+                const targetCard = document.querySelector(`.platform-card[data-platform="${platformId}"]`);
+                const targetPanel = document.getElementById(`panel-${platformId}`);
+
+                if (targetCard && targetPanel) {
+                    targetCard.classList.add('active');
+                    targetPanel.classList.add('active');
+
+                    // Smooth scroll to panel top on mobile
+                    if (window.innerWidth <= 768) {
+                        targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const platform = card.getAttribute('data-platform');
+                    switchPlatform(platform);
+                    history.replaceState(null, null, '#' + platform);
+                });
+            });
+
+            // Handle cross-tab references e.g. clicking "Android setup tab" inside Windows panel
+            document.querySelectorAll('.js-tab-switch').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetPlatform = link.getAttribute('data-target');
+                    switchPlatform(targetPlatform);
+                    history.replaceState(null, null, '#' + targetPlatform);
+                });
+            });
+
+            // Handle URL Hash Selection on load and hash change
+            function handleHashChange() {
+                const hash = window.location.hash.toLowerCase().replace('#', '');
+                const validPlatforms = ['windows', 'linux', 'android', 'mac'];
+                if (validPlatforms.includes(hash)) {
+                    switchPlatform(hash);
+                }
+            }
+
+            handleHashChange();
+            window.addEventListener('hashchange', handleHashChange);
+        });
+    </script>
+</body>
+
+</html>

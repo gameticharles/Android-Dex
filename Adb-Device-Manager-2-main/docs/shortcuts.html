@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- ========================= CORE META (SEO + MOBILE) ========================== -->
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Language" content="en" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+        content="Complete keyboard shortcut reference for ADB Device Manager. All global hotkeys for screen mirroring, media control, Android DeX, system controls, and navigation — in one place.">
+    <meta name="keywords"
+        content="ADB Device Manager shortcuts, keyboard hotkeys, ADB shortcuts, Android DeX shortcut, screen mirroring hotkey, media control keys">
+    <meta name="author" content="ADB Device Manager">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://shrey113.github.io/Adb-Device-Manager-2/docs/shortcuts.html">
+
+    <title>Keyboard Shortcuts — ADB Device Manager</title>
+
+    <meta property="og:title" content="ADB Device Manager — Keyboard Shortcuts Reference">
+    <meta property="og:description" content="All global hotkeys for ADB Device Manager: screen mirroring, media control, Android DeX, system controls, and more.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://shrey113.github.io/Adb-Device-Manager-2/docs/shortcuts.html">
+    <meta property="og:image" content="https://shrey113.github.io/Adb-Device-Manager-2/images/app_png.png">
+    <meta property="og:site_name" content="ADB Device Manager">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ADB Device Manager — Keyboard Shortcuts">
+    <meta name="twitter:description" content="Complete keyboard shortcut reference for ADB Device Manager.">
+    <meta name="twitter:image" content="https://shrey113.github.io/Adb-Device-Manager-2/images/app_png.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "ADB Device Manager — Keyboard Shortcuts Reference",
+      "description": "Complete keyboard shortcut reference for ADB Device Manager.",
+      "author": { "@type": "Organization", "name": "ADB Device Manager" },
+      "publisher": {
+        "@type": "Organization",
+        "name": "ADB Device Manager",
+        "logo": { "@type": "ImageObject", "url": "https://shrey113.github.io/Adb-Device-Manager-2/images/app_png.png" }
+      },
+      "mainEntityOfPage": "https://shrey113.github.io/Adb-Device-Manager-2/docs/shortcuts.html"
+    }
+    </script>
+
+    <link rel="icon" href="../images/app_png.png">
+    <link rel="apple-touch-icon" href="../images/app_png.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Docs.css">
+
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+
+    <style>
+        .shortcuts-intro {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            background: var(--note-bg, #f0f4ff);
+            border: 1px solid var(--note-border, #c7d7fd);
+            color: var(--note-text, #3730a3);
+            font-size: 0.9rem;
+            margin-bottom: 2.5rem;
+        }
+        .shortcuts-intro svg { flex-shrink: 0; width: 20px; height: 20px; }
+
+        .shortcut-category { margin-bottom: 2.75rem; }
+
+        .shortcut-category-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary, #1f2937);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color, #e5e7eb);
+            letter-spacing: -0.01em;
+        }
+        .shortcut-category-title svg { width: 18px; height: 18px; color: #6366f1; }
+
+        .shortcut-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .shortcut-table thead tr { background: var(--table-header-bg, #f3f4f6); }
+        .shortcut-table th {
+            text-align: left;
+            padding: 0.65rem 1rem;
+            font-weight: 600;
+            color: var(--text-secondary, #6b7280);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .shortcut-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color, #e5e7eb);
+            color: var(--text-primary, #1f2937);
+            vertical-align: middle;
+        }
+        .shortcut-table tr:last-child td { border-bottom: none; }
+        .shortcut-table tr:hover td { background: var(--hover-bg, #f9fafb); }
+
+        kbd {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.55rem;
+            background: var(--kbd-bg, #ffffff);
+            border: 1px solid var(--kbd-border, #d1d5db);
+            border-bottom-width: 2px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary, #374151);
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+        .key-combo { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
+        .key-plus { color: var(--text-secondary, #9ca3af); font-size: 0.75rem; font-weight: 700; }
+        .feature-name { font-weight: 600; color: var(--text-primary, #111827); }
+
+        [data-theme="dark"] .shortcuts-intro {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+        }
+        [data-theme="dark"] kbd { background: #1e1e2e; border-color: #374151; color: #e5e7eb; }
+        [data-theme="dark"] .shortcut-table thead tr { background: rgba(255,255,255,0.04); }
+        [data-theme="dark"] .shortcut-table tr:hover td { background: rgba(255,255,255,0.03); }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="../index.html" class="logo">
+                <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                    class="logo-icon" alt="ADB Device Manager" width="32" height="32">
+                <span>ADB Device Manager</span>
+            </a>
+            <nav class="nav">
+                <a href="../pages/features.html" class="nav-link">Features</a>
+                <a href="Docs.html" class="nav-link">Docs</a>
+                <a href="../pages/support.html" class="nav-link">Support</a>
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <h3 class="sidebar-title">Shortcuts</h3>
+                <div class="nav-section">
+                    <a href="#mirroring" class="nav-section-link">
+                        <i data-lucide="monitor" class="sidebar-icon"></i>
+                        <span>Mirroring &amp; Audio</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <a href="#dex" class="nav-section-link">
+                        <i data-lucide="layout-grid" class="sidebar-icon"></i>
+                        <span>Android DeX &amp; Desktop</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <a href="#media" class="nav-section-link">
+                        <i data-lucide="music" class="sidebar-icon"></i>
+                        <span>Media &amp; Volume</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <a href="#system" class="nav-section-link">
+                        <i data-lucide="settings" class="sidebar-icon"></i>
+                        <span>System Controls</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <a href="#navigation" class="nav-section-link">
+                        <i data-lucide="navigation" class="sidebar-icon"></i>
+                        <span>Navigation &amp; Window</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <a href="Docs.html" class="nav-section-link">
+                        <i data-lucide="arrow-left" class="sidebar-icon"></i>
+                        <span>Back to Docs</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="docs-content">
+            <article class="intro-section">
+                <h1>Keyboard Shortcuts</h1>
+                <p class="intro-text">
+                    All global hotkeys for ADB Device Manager in one place. Shortcuts are organised by category for
+                    quick reference. All hotkeys are <strong>global</strong> — they work even when the app window is minimised.
+                </p>
+            </article>
+
+            <div class="shortcuts-intro" role="note">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>All shortcuts listed below are <strong>global hotkeys</strong> and work even when ADB Device Manager is minimised or running in the background.</span>
+            </div>
+
+            <!-- Mirroring & Audio -->
+            <section id="mirroring" class="shortcut-category">
+                <h2 class="shortcut-category-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+                    Mirroring &amp; Audio
+                </h2>
+                <table class="shortcut-table" aria-label="Mirroring and audio shortcuts">
+                    <thead><tr><th>Feature</th><th>Shortcut</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="feature-name">Screen Mirroring</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>S</kbd></div></td>
+                            <td>Start or stop screen mirroring.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Audio Streaming</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>A</kbd></div></td>
+                            <td>Stream device audio output to the PC.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Input Control</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>I</kbd></div></td>
+                            <td>Enable mouse &amp; keyboard control of the device.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Android DeX & Desktop -->
+            <section id="dex" class="shortcut-category">
+                <h2 class="shortcut-category-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path></svg>
+                    Android DeX &amp; Desktop Mode
+                </h2>
+                <table class="shortcut-table" aria-label="Android DeX and desktop mode shortcuts">
+                    <thead><tr><th>Feature</th><th>Shortcut</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="feature-name">Android DeX</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>Shift</kbd><span class="key-plus">+</span><kbd>D</kbd></div></td>
+                            <td>Launch the Android DeX multi-window desktop.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Desktop Mode</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>D</kbd></div></td>
+                            <td>Launch Android in desktop-style multi-app mode.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">File Transfer</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>F</kbd></div></td>
+                            <td>Open the File Transfer panel.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Media & Volume -->
+            <section id="media" class="shortcut-category">
+                <h2 class="shortcut-category-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Media &amp; Volume
+                </h2>
+                <table class="shortcut-table" aria-label="Media and volume shortcuts">
+                    <thead><tr><th>Feature</th><th>Shortcut</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="feature-name">Play / Pause</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>Space</kbd></div></td>
+                            <td>Play or pause the current media.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Previous Track</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>&#8592;</kbd></div></td>
+                            <td>Skip to the previous track.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Next Track</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>&#8594;</kbd></div></td>
+                            <td>Skip to the next track.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Increase Volume</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>&#8593;</kbd></div></td>
+                            <td>Raise the device volume.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Decrease Volume</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>&#8595;</kbd></div></td>
+                            <td>Lower the device volume.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- System Controls -->
+            <section id="system" class="shortcut-category">
+                <h2 class="shortcut-category-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                    System Controls
+                </h2>
+                <table class="shortcut-table" aria-label="System control shortcuts">
+                    <thead><tr><th>Feature</th><th>Shortcut</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="feature-name">Power Toggle</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>P</kbd></div></td>
+                            <td>Turn the device screen on or off.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Bluetooth Toggle</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>B</kbd></div></td>
+                            <td>Toggle Bluetooth on the device.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Voice Assistant</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>V</kbd></div></td>
+                            <td>Open the device voice assistant.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Take Screenshot</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>Shift</kbd><span class="key-plus">+</span><kbd>S</kbd></div></td>
+                            <td>Capture a screenshot of the device screen.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Navigation & Window -->
+            <section id="navigation" class="shortcut-category">
+                <h2 class="shortcut-category-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    Navigation &amp; Window
+                </h2>
+                <table class="shortcut-table" aria-label="Navigation and window shortcuts">
+                    <thead><tr><th>Feature</th><th>Shortcut</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="feature-name">Toggle App Window</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>O</kbd></div></td>
+                            <td>Show or hide the ADB Device Manager window.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Home Button</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>Home</kbd></div></td>
+                            <td>Send the Android Home action.</td>
+                        </tr>
+                        <tr>
+                            <td><div class="feature-name">Back Button</div></td>
+                            <td><div class="key-combo"><kbd>Alt</kbd><span class="key-plus">+</span><kbd>Backspace</kbd></div></td>
+                            <td>Send the Android Back action.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <nav class="docs-navigation" aria-label="Page navigation">
+                <a href="Docs.html" class="docs-nav-link docs-nav-prev">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 18l-6-6 6-6"></path></svg>
+                    <div><span>Previous</span><strong>Documentation</strong></div>
+                </a>
+                <a href="installation.html" class="docs-nav-link docs-nav-next">
+                    <div><span>Next</span><strong>Installation Guide</strong></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 18l6-6-6-6"></path></svg>
+                </a>
+            </nav>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        lucide.createIcons();
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.hasAttribute('data-theme');
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    </script>
+</body>
+</html>

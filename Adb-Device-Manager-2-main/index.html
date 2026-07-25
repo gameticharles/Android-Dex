@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- ======================== CORE META (SEO + MOBILE) ========================= -->
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Language" content="en" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Primary SEO Description -->
+    <meta name="description"
+        content="ADB Device Manager — Control, mirror, and manage Android devices from Windows using ADB Mode and App Mode. Includes real-time calls, media controls, notifications, multi-window, file manager, and audio cast.">
+
+    <!-- Keywords  -->
+    <meta name="keywords"
+        content="ADB Device Manager, Android to PC, ADB mode, Screen mirroring, File manager, scrcpy alternative, Android Windows integration, notifications, media control, remote control">
+
+    <meta name="author" content="Shrey113">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="theme-color" content="#00BFA5">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://shrey113.github.io/Adb-Device-Manager-2/">
+
+    <!-- ======================== OPEN GRAPH (FACEBOOK + SOCIAL) ========================= -->
+    <meta property="og:title" content="ADB Device Manager — Android & Windows Dual Control">
+    <meta property="og:description"
+        content="Control Android from Windows — ADB Mode & App Mode with mirroring, notifications, and media control.">
+    <meta property="og:image" content="images/app_banner.png">
+    <meta property="og:image:alt" content="ADB Device Manager Overview">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shrey113.github.io/Adb-Device-Manager-2/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="ADB Device Manager">
+
+    <!-- ======================== TWITTER CARD ========================= -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ADB Device Manager — Android & Windows Dual Mode">
+    <meta name="twitter:description"
+        content="Mirror, control, and manage Android from your Windows PC with dual control modes.">
+    <meta name="twitter:image" content="images/app_banner.png">
+    <meta name="twitter:creator" content="@Shrey113">
+
+    <!-- ======================== STRUCTURED DATA — SOFTWARE APP ========================= -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ADB Device Manager",
+      "operatingSystem": "Windows, Android",
+      "applicationCategory": "Utility",
+      "description": "ADB Device Manager offers ADB Mode (mirroring, file manager, multi-window) and App Mode (calls, notifications, media control, audio cast).",
+      "softwareVersion": "1.0",
+      "downloadUrl": "https://shrey113.github.io/Adb-Device-Manager-2/releases",
+      "author": {
+        "@type": "Person",
+        "name": "Shrey113",
+        "url": "https://github.com/Shrey113"
+      },
+    "publisher": {
+  "@type": "Organization",
+  "name": "ADB Device Manager",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://shrey113.github.io/Adb-Device-Manager-2/images/app_webp.webp"
+  },
+  "url": "https://shrey113.github.io/Adb-Device-Manager-2/"
+}
+,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+
+    <!-- Breadcrumb Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://shrey113.github.io/Adb-Device-Manager-2/" },
+        { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://shrey113.github.io/Adb-Device-Manager-2/#features" },
+        { "@type": "ListItem", "position": 3, "name": "Download", "item": "https://shrey113.github.io/Adb-Device-Manager-2/download.html" }
+      ]
+    }
+    </script>
+
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ADB Device Manager",
+      "url": "https://shrey113.github.io/Adb-Device-Manager-2/",
+      "logo": "https://shrey113.github.io/Adb-Device-Manager-2/images/app_webp.webp",
+      "sameAs": ["https://github.com/Shrey113/Adb-Device-Manager-2"]
+    }
+    </script>
+
+    <!-- ======================== PERFORMANCE ========================= -->
+    <link rel="dns-prefetch" href="https://github.com">
+    <link rel="dns-prefetch" href="https://raw.githubusercontent.com">
+    <link rel="dns-prefetch" href="https://shrey113.github.io">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+
+    <!-- ======================== ICONS ========================= -->
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+
+    <link rel="apple-touch-icon" href="images/app_png_100.png">
+
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_100.webp"
+        as="image">
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_banner.webp"
+        as="image">
+
+
+
+
+    <!-- ======================== FONTS & STYLES (NON-BLOCKING) ========================= -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+
+    <!-- Title -->
+    <title>ADB Device Manager — Android + Windows Dual Control</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box
+    }
+
+    body {
+        width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: #f7f6f9;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+    }
+
+    .video-background {
+        position: absolute;
+        top: 40px;
+        left: 0;
+        width: 100%;
+        object-fit: cover;
+        z-index: 0;
+        pointer-events: none
+    }
+
+    .nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: #1f2937;
+        font-weight: 500;
+        font-size: .95rem;
+        transition: all .3s ease;
+        position: relative
+    }
+
+    .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #6366f1 0, #8b5cf6 100%);
+        transition: width .3s ease
+    }
+
+    .nav-link:hover {
+        color: #6366f1
+    }
+
+    .nav-link:hover::after {
+        width: 100%
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        color: #1a1a2e;
+        font-weight: 700;
+        font-size: 1.25rem
+    }
+
+    .logo-icon {
+        width: 38px;
+        height: 38px;
+        color: #6366f1
+    }
+
+    .content-overlay {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        z-index: 10;
+        display: flex;
+        flex-direction: column
+    }
+
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column
+    }
+
+    .hero-section {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 2rem;
+        min-height: calc(100vh - 100px);
+        position: relative;
+        overflow: hidden
+    }
+
+    .hero-content {
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1
+    }
+
+    .hero-text {
+        text-align: center;
+        z-index: 20;
+        animation: fadeInUp .8s ease-out backwards
+    }
+
+    .hero-title {
+        font-size: clamp(3rem, 7vw, 5rem);
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #1f2937 0, #4b5563 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -.04em;
+        text-shadow: 0 4px 20px #0000001a
+    }
+
+    .hero-subtitle {
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        color: #374151;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        letter-spacing: -.02em
+    }
+
+    .hero-description {
+        font-size: clamp(1rem, 2vw, 1.3rem);
+        color: #202020;
+        margin-bottom: 3rem;
+        font-weight: 450;
+        line-height: 1.6
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeInUp 1s ease-out .3s backwards
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .75rem;
+        padding: 1.1rem 2.5rem;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .3s ease;
+        border: 2px solid transparent;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden
+    }
+
+    .btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: #ffffff40;
+        transform: translate(-50%, -50%);
+        transition: width .6s ease, height .6s ease
+    }
+
+    .btn:hover::before {
+        width: 350px;
+        height: 350px
+    }
+
+    .btn-icon,
+    .download-icon {
+        width: 22px;
+        height: 22px;
+        z-index: 1;
+        position: relative
+    }
+
+    .btn span {
+        z-index: 1;
+        position: relative
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0, #8b5cf6 100%);
+        color: #fff;
+        box-shadow: 0 10px 30px #6366f14d
+    }
+
+    .btn-primary:hover {
+        box-shadow: 0 15px 40px #6366f166
+    }
+
+    .btn-secondary {
+        background: #ffffffe6;
+        color: #1f2937;
+        border-color: #6366f133;
+        box-shadow: 0 8px 24px #0000001a
+    }
+
+    .btn-secondary:hover {
+        box-shadow: 0 12px 32px #00000026;
+        border-color: #6366f1
+    }
+
+    .features-section {
+        padding: 4rem 2rem 6rem;
+        background: 0 0
+    }
+
+    .features-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        animation: fadeInUp 1.2s ease-out .6s backwards
+    }
+
+    .feature-card {
+        background: #ffffffbf;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid #ffffff80;
+        box-shadow: 0 8px 32px #0000001a;
+        transition: all .4s ease;
+        position: relative;
+        overflow: hidden
+    }
+
+    .feature-card:hover {
+        border-color: #6366f1;
+        background: linear-gradient(145deg, #fffef9 0%, #fefbf0 40%, #fef7e0 100%);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1)
+    }
+
+    .feature-card:hover {
+        box-shadow: 0 16px 48px #6366f133;
+        background: #ffffffd9
+    }
+
+    /* ========================
+   VIP Card - Professional Premium Styling
+   ======================== */
+    .feature-card.vip-card {
+        background: linear-gradient(145deg, #fffef9 0%, #fefcf3 40%, #fef9e7 100%);
+        border: 1.5px solid rgba(212, 175, 55, 0.4);
+        position: relative;
+        overflow: visible;
+    }
+
+    .feature-card.vip-card::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(180deg, rgba(255, 248, 220, 0.3) 0%, transparent 40%);
+        border-radius: 18px;
+        pointer-events: none;
+    }
+
+    .feature-card.vip-card:hover {
+        border-color: rgba(212, 175, 55, 0.6);
+        background: linear-gradient(145deg, #fffef9 0%, #fefbf0 40%, #fef7e0 100%);
+    }
+
+
+    .vip-icon {
+        background: linear-gradient(145deg, #d4af37 0%, #c9a227 50%, #a68523 100%) !important;
+        box-shadow:
+            0 6px 20px rgba(180, 140, 40, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .vip-description {
+        color: #6b5a2e;
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin-bottom: 1.25rem;
+        font-weight: 450;
+        opacity: 0.9;
+    }
+
+    .feature-card.vip-card .feature-title {
+        color: #5c4a1f;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-card.vip-card .feature-list li {
+        color: #6b5a2e;
+    }
+
+    .feature-card.vip-card .feature-list li:hover {
+        color: #5c4a1f;
+    }
+
+    .feature-card.vip-card .list-icon {
+        color: #c9a227;
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6366f1 0, #8b5cf6 100%);
+        border-radius: 14px;
+        box-shadow: 0 4px 16px #6366f14d;
+        transition: all .4s ease
+    }
+
+    .feature-card:hover .feature-icon {
+        box-shadow: 0 8px 24px #6366f166
+    }
+
+    .feature-icon svg {
+        width: 28px;
+        height: 28px;
+        color: #fff
+    }
+
+    .feature-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.25rem;
+        letter-spacing: -.02em
+    }
+
+    .feature-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        color: #4b5563;
+        font-size: .95rem;
+        line-height: 1.6;
+        transition: all .3s ease
+    }
+
+    .feature-list li:hover {
+        color: #1f2937;
+    }
+
+    .list-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: #6366f1;
+        margin-top: 2px
+    }
+
+
+    @keyframes fadeInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(60px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0)
+        }
+    }
+
+    @keyframes slideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-20px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0)
+        }
+    }
+
+    @media (max-width:1100px) {
+        .video-background {
+            top: -3%
+        }
+    }
+
+    @media (max-width:900px) {
+        .video-background {
+            top: 4%
+        }
+    }
+
+    @media (max-width:1024px) {
+        .hero-section {
+            padding: 3.5rem 2rem
+        }
+
+        .features-container {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.75rem
+        }
+
+
+    }
+
+    @media (max-width:768px) {
+        .header {
+            padding: 1rem 1.25rem
+        }
+
+        .nav {
+            gap: 1rem;
+            flex-wrap: wrap
+        }
+
+        .nav-link {
+            font-size: .85rem;
+            padding: .5rem
+        }
+
+        .hero-section {
+            padding: 2.5rem 1.5rem;
+            min-height: calc(100vh - 70px)
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            margin-bottom: .75rem
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.25rem, 4vw, 2rem);
+            margin-bottom: .75rem
+        }
+
+        .hero-description {
+            font-size: clamp(.95rem, 2.5vw, 1.15rem);
+            margin-bottom: 2rem
+        }
+
+        .features-section {
+            padding: 2.5rem 1.25rem 3.5rem
+        }
+
+        .features-container {
+            grid-template-columns: 1fr;
+            gap: 1.5rem
+        }
+
+        .feature-card {
+            padding: 1.75rem
+        }
+
+        .feature-title {
+            font-size: 1.25rem
+        }
+
+        .feature-list li {
+            font-size: .9rem
+        }
+
+        .cta-buttons {
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%
+        }
+
+        .video-background {
+            display: none
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+            padding: 1rem 2rem;
+            font-size: .95rem
+        }
+
+
+        .footer-content {
+            gap: 1.25rem
+        }
+
+        .footer-brand .logo-icon {
+            width: 42px;
+            height: 42px
+        }
+
+        .footer-brand-name {
+            font-size: 1rem
+        }
+
+        .footer-nav {
+            gap: 0.4rem 1rem;
+            padding: 0.85rem 0
+        }
+
+        .footer-nav .nav-link {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.6rem
+        }
+
+        .footer-copyright {
+            font-size: 0.8rem
+        }
+
+        .nav p {
+            font-size: .85rem
+        }
+    }
+
+    @media (max-width:640px) {
+        .logo-icon {
+            width: 32px;
+            height: 32px
+        }
+
+        .hero-section {
+            padding: 2rem 1.25rem
+        }
+
+        .feature-card {
+            padding: 1.5rem
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1.25rem
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px
+        }
+
+        .btn {
+            padding: .9rem 1.75rem
+        }
+
+        .btn-icon,
+        .download-icon {
+            width: 20px;
+            height: 20px
+        }
+    }
+
+    @media (max-width:480px) {
+        .nav {
+            gap: .75rem
+        }
+
+        .nav-link {
+            font-size: .8rem;
+            padding: .4rem
+        }
+
+        .logo {
+            font-size: 1.1rem
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px
+        }
+
+        .hero-section {
+            padding: 1.75rem 1rem
+        }
+
+        .hero-title {
+            font-size: clamp(1.75rem, 7vw, 2.5rem)
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 3.5vw, 1.5rem)
+        }
+
+        .hero-description {
+            font-size: clamp(.9rem, 2.5vw, 1rem);
+            margin-bottom: 1.75rem
+        }
+
+        .features-section {
+            padding: 2rem 1rem 3rem
+        }
+
+        .feature-card {
+            padding: 1.25rem
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            margin-bottom: 1rem
+        }
+
+        .feature-list {
+            gap: .85rem
+        }
+
+        .feature-list li {
+            font-size: .85rem
+        }
+
+        .list-icon {
+            width: 18px;
+            height: 18px
+        }
+
+        .btn {
+            padding: .85rem 1.5rem;
+            font-size: .9rem;
+            gap: .6rem
+        }
+
+        .btn-icon,
+        .download-icon {
+            width: 18px;
+            height: 18px
+        }
+
+        .footer-content {
+            gap: 1rem
+        }
+
+        .footer-brand .logo-icon {
+            width: 38px;
+            height: 38px
+        }
+
+        .footer-brand-name {
+            font-size: 0.95rem
+        }
+
+        .footer-nav {
+            gap: 0.35rem 0.75rem;
+            padding: 0.75rem 0
+        }
+
+        .footer-nav .nav-link {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.5rem
+        }
+
+        .footer-copyright {
+            font-size: 0.75rem
+        }
+
+        .nav p {
+            font-size: .8rem
+        }
+    }
+
+    @media (max-width:360px) {
+        .hero-title {
+            font-size: 1.5rem
+        }
+
+        .hero-subtitle {
+            font-size: 1rem
+        }
+
+        .hero-description {
+            font-size: .85rem
+        }
+
+        .feature-title {
+            font-size: 1rem
+        }
+
+        .feature-list li {
+            font-size: .8rem
+        }
+
+        .btn {
+            padding: .75rem 1.25rem;
+            font-size: .85rem
+        }
+    }
+
+    @media (hover:none) and (pointer:coarse) {
+        .btn {
+            min-height: 48px;
+            padding: 1rem 2rem
+        }
+
+        .nav-link {
+            min-height: 44px;
+            display: flex;
+            align-items: center
+        }
+
+        .feature-card {
+            cursor: pointer;
+            -webkit-tap-highlight-color: #6366f11a
+        }
+    }
+
+    .hero-section {
+        position: relative
+    }
+
+    @keyframes deviceIntro {
+        0% {
+            opacity: 0;
+            transform: translateY(25px) scale(.92) rotate(var(--rot));
+            filter: blur(6px)
+        }
+
+        70% {
+            opacity: 1;
+            transform: translateY(0) scale(1.02) rotate(var(--rot));
+            filter: blur(0)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotate(var(--rot))
+        }
+    }
+
+    @keyframes deviceFloat {
+        0% {
+            transform: translateY(0) rotate(var(--rot))
+        }
+
+        50% {
+            transform: translateY(-6px) rotate(calc(var(--rot) + 1deg))
+        }
+
+        to {
+            transform: translateY(0) rotate(var(--rot))
+        }
+    }
+
+    .device-float {
+        position: absolute;
+        width: 60px;
+        border-radius: 20px;
+        overflow: hidden;
+        opacity: 0;
+        animation: deviceIntro .9s cubic-bezier(.4, 0, .2, 1) forwards, deviceFloat 4.5s ease-in-out infinite;
+        animation-composition: add;
+        display: none
+    }
+
+    .device-float img {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: cover
+    }
+
+    .device-1 {
+        top: 5%;
+        left: 5%;
+        --rot: -5deg;
+        z-index: 3;
+        animation-delay: 0s
+    }
+
+    .device-2 {
+        top: 35%;
+        right: 3%;
+        --rot: 8deg;
+        z-index: 2;
+        animation-delay: .2s
+    }
+
+    .device-3 {
+        top: 30%;
+        left: 10%;
+        --rot: 3deg;
+        z-index: 4;
+        animation-delay: .4s
+    }
+
+    .device-4 {
+        bottom: 8%;
+        right: 12%;
+        --rot: -4deg;
+        z-index: 3;
+        animation-delay: .6s
+    }
+
+    .device-5 {
+        bottom: 5%;
+        left: 15%;
+        --rot: -4deg;
+        z-index: 3;
+        animation-delay: .8s
+    }
+
+    @media (max-width:768px) {
+        .device-float {
+            display: block
+        }
+    }
+
+    @media (max-width:450px) {
+        .device-float {
+            display: block
+        }
+
+        .device-1 {
+            top: 5%;
+            left: 9%;
+            --rot: -5deg
+        }
+
+        .device-2 {
+            top: 25%;
+            right: 3%;
+            --rot: 8deg
+        }
+
+        .device-3 {
+            top: 28%;
+            left: 3%;
+            --rot: 3deg
+        }
+
+        .device-4 {
+            bottom: 3%;
+            right: 12%;
+            --rot: -4deg
+        }
+
+        .device-5 {
+            bottom: 9%;
+            left: 15%;
+            --rot: -4deg
+        }
+    }
+</style>
+
+<body>
+
+    <!-- Content Overlay -->
+    <div class="content-overlay">
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero-section">
+                <!-- Video Background (inside hero only) -->
+                <video class="video-background" autoplay muted playsinline preload="metadata">
+                    <source
+                        src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/index_main_page.mp4"
+                        type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="hero-content">
+                    <!-- Main Text and Buttons -->
+                    <article class="hero-text">
+                        <h1 class="hero-title">Adb Device Manager</h1>
+                        <h2 class="hero-subtitle">Connect without limits</h2>
+                        <br>
+
+                        <!-- CTA Buttons -->
+                        <div class="cta-buttons" id="download">
+
+                            <!-- PC Button -->
+                            <a href="windows_download.html" class="btn btn-primary" aria-label="Download for PC">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>For PC</span>
+                                <svg class="download-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </a>
+
+                            <!-- Mobile Button -->
+                            <a href="android_download.html" class="btn btn-secondary">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none">
+                                    <rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <circle cx="12" cy="18" r="1" fill="currentColor" />
+                                </svg>
+                                <span>For mobile</span>
+                                <svg class="download-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </a>
+                            <!-- Linux Button -->
+                            <a href="pages/linux_download.html" class="btn btn-secondary" aria-label="Download for Linux">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Terminal icon -->
+                                    <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                                    <path d="M7 9l3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M13 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                                <span>For Linux</span>
+                                <svg class="download-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </a>
+                            <a href="docs/Docs.html" class="btn btn-secondary" aria-label="Documentation button">
+                                <!-- Book open icon -->
+                                <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                </svg>
+                                <span>Documentation</span>
+                            </a>
+                        </div>
+
+                    </article>
+                </div>
+
+                <div class="device-float device-1">
+                    <picture>
+                        <source
+                            srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_1_100.webp"
+                            type="image/webp">
+                        <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_1_400.webp"
+                            alt="device" width="105" height="105" loading="lazy">
+                    </picture>
+                </div>
+
+                <div class="device-float device-2">
+                    <picture>
+                        <source
+                            srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_2_100.webp"
+                            type="image/webp">
+                        <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_2_400.webp"
+                            alt="device" width="105" height="105" loading="lazy">
+                    </picture>
+                </div>
+
+                <div class="device-float device-3">
+                    <picture>
+                        <source
+                            srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_3_100.webp"
+                            type="image/webp">
+                        <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_3_400.webp"
+                            alt="device" width="105" height="105" loading="lazy">
+                    </picture>
+                </div>
+
+                <div class="device-float device-4">
+                    <picture>
+                        <source
+                            srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_4_100.webp"
+                            type="image/webp">
+                        <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_4_400.webp"
+                            alt="device" width="105" height="105" loading="lazy">
+                    </picture>
+                </div>
+
+                <div class="device-float device-5">
+                    <picture>
+                        <source
+                            srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_5_100.webp"
+                            type="image/webp">
+                        <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/devices/devices_5_400.webp"
+                            alt="device" width="105" height="105" loading="lazy">
+                    </picture>
+                </div>
+
+
+
+
+            </section>
+
+            <!-- Features Section -->
+            <section class="features-section" id="features">
+                <div class="features-container">
+
+                    <!-- VIP Feature Card: Android Dex (Special Premium Card) -->
+                    <article class="feature-card vip-card" onclick="window.location.href='docs/Docs.html#android-dex'"
+                        style="cursor: pointer;">
+                        <div class="feature-icon vip-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor"
+                                    stroke-width="2" />
+                                <path d="M8 21H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M12 17V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <rect x="5" y="6" width="5" height="4" rx="0.5" stroke="currentColor"
+                                    stroke-width="1.5" />
+                                <rect x="11" y="6" width="8" height="4" rx="0.5" stroke="currentColor"
+                                    stroke-width="1.5" />
+                                <path d="M5 12H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                                <circle cx="7" cy="14" r="1" fill="currentColor" />
+                                <circle cx="10" cy="14" r="1" fill="currentColor" />
+                                <circle cx="13" cy="14" r="1" fill="currentColor" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Android Dex</h3>
+                        <p class="vip-description">Transform your phone into a full desktop experience</p>
+                        <ul class="feature-list">
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span>Virtual Display (1080p - 4K)</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span>3 Performance Modes (60-120 FPS)</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span>Full Keyboard & Mouse Support</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <!-- Feature Card 2: Device Projection & Control -->
+                    <article class="feature-card" onclick="window.location.href='docs/Docs.html#projection-control'"
+                        style="cursor: pointer;">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor"
+                                    stroke-width="2" />
+                                <path d="M8 21H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M12 17V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M7 8L10 11L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Device Projection</h3>
+                        <ul class="feature-list">
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                <span>Screen Mirroring</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                    <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Audio Streaming</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <rect x="2" y="4" width="20" height="5" rx="1" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <path d="M6 15V19M10 15V19M14 15V19M18 15V19" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Keyboard & Mouse Control</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <!-- Feature Card 3: Companion Services -->
+                    <article class="feature-card" onclick="window.location.href='docs/Docs.html#companion-services'"
+                        style="cursor: pointer;">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="5" y="2" width="14" height="20" rx="3" stroke="currentColor"
+                                    stroke-width="2" />
+                                <circle cx="12" cy="18" r="1" fill="currentColor" />
+                                <path d="M9 6H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M12 9V13M10 11H14" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Companion Services</h3>
+                        <ul class="feature-list">
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                                    <path d="M10 9L14 12L10 15" fill="currentColor" />
+                                </svg>
+                                <span>Music Control</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Notification Center</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor"
+                                        stroke-width="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                                    <path d="M21 15L16 10L5 21" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Photo Gallery & Files</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                    <!-- Feature Card 4: Windows Integration -->
+                    <article class="feature-card" onclick="window.location.href='docs/Docs.html#windows-integration'"
+                        style="cursor: pointer;">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 3L10 3.5V11.5L3 12V3Z" stroke="currentColor" stroke-width="2"
+                                    stroke-linejoin="round" />
+                                <path d="M11 3.5L21 4.5V11.5L11 12.5V3.5Z" stroke="currentColor" stroke-width="2"
+                                    stroke-linejoin="round" />
+                                <path d="M3 13L10 12.5V20.5L3 21V13Z" stroke="currentColor" stroke-width="2"
+                                    stroke-linejoin="round" />
+                                <path d="M11 12.5L21 11.5V19.5L11 20.5V12.5Z" stroke="currentColor" stroke-width="2"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Windows Integration</h3>
+                        <ul class="feature-list">
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M13 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V9L13 2Z"
+                                        stroke="currentColor" stroke-width="2" />
+                                    <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" />
+                                </svg>
+                                <span>File Sharing System</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"
+                                        stroke-linejoin="round" />
+                                    <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Bluetooth Audio Streaming</span>
+                            </li>
+                            <li>
+                                <svg class="list-icon" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" />
+                                    <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                                <span>Device Finder</span>
+                            </li>
+                        </ul>
+                    </article>
+
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <link rel="stylesheet" href="pages/footer.css">
+        <footer class="footer">
+
+            <!-- <section class="footer-cta">
+                <picture class="footer-cta-logo-wrap">
+                    <source
+                        srcset="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_50.webp"
+                        type="image/webp">
+                    <img src="https://cdn.jsdelivr.net/gh/shrey113/Adb-Device-Manager-2@latest/images/app_webp_100.webp"
+                        class="footer-cta-logo" alt="ADB Device Manager" width="56" height="56" loading="lazy">
+                </picture>
+                <h2>Get Started with ADB Device Manager</h2>
+                <p>Control your Android device from Windows</p>
+            </section> -->
+
+            <!-- Main Footer Content -->
+            <div class="footer-main">
+                <!-- Contact Column -->
+                <div class="footer-contact-section">
+                    <h3 class="footer-column-title">Contact</h3>
+                    <div class="footer-contact-list">
+                        <a href="https://github.com/Shrey113/Adb-Device-Manager-2" class="footer-contact-item"
+                            target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path
+                                    d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"
+                                    fill="currentColor" />
+                            </svg>
+                            <span>Repository</span>
+                        </a>
+
+                    </div>
+                    <div class="footer-contact-list">
+                        <a href="https://github.com/Shrey113/Adb-Device-Manager-2/issues" class="footer-contact-item"
+                            target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                                <circle cx="12" cy="12" r="3" fill="currentColor" />
+                            </svg>
+                            <span>Issues</span>
+                        </a>
+
+                    </div>
+                    <div class="footer-contact-list">
+                        <a href="https://github.com/Shrey113/Adb-Device-Manager-2/releases" class="footer-contact-item"
+                            target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+                            </svg>
+                            <span>App update</span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <!-- Products Column -->
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Products</h3>
+                    <div class="footer-links">
+                        <a href="windows_download.html">Windows App</a>
+                        <a href="android_download.html">Android App</a>
+                        <a href="pages/linux_download.html">Linux App</a>
+                        <a href="pages/features.html">All Features</a>
+                    </div>
+                </div>
+
+                <!-- Resources Column -->
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Resources</h3>
+                    <div class="footer-links">
+                        <a href="docs/Docs.html">Documentation</a>
+                        <a href="docs/shortcuts.html">Keyboard Shortcuts</a>
+                        <a href="pages/Developers_pages/changelog.html">Changelog</a>
+                        <a href="pages/Developers.html">Developers</a>
+                        <a href="pages/security_pages/virustotal_reports.html">VirusTotal</a>
+                        <a href="https://gameticharles.github.io/Android-Dex/" target="_blank" rel="noopener">Android DEX Docs ↗</a>
+                    </div>
+                </div>
+
+                <!-- Security Column -->
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Security</h3>
+                    <div class="footer-links">
+                        <a href="security/security_model.html">Security Model</a>
+                        <a href="security/transparency_model.html">Transparency</a>
+                        <a href="security/privacy_policy.html">Privacy Policy</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2025 <a href="https://github.com/Shrey113">Shrey113</a>. All rights
+                    reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="security/privacy_policy.html">Privacy Policy</a>
+                    <a href="pages/security_pages/app_terms.html">App Terms</a>
+                    <a href="pages/support.html">Support & FAQ</a>
+                </div>
+            </div>
+
+            <!-- Gradient Border -->
+            <div class="footer-gradient-border"></div>
+        </footer>
+    </div>
+</body>
+
+
+<!-- 🧠 SEO Footer Enhancements (Structured Data for Website + SearchAction) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ADB Device Manager",
+  "operatingSystem": "Windows, Android",
+  "applicationCategory": "Utility",
+  "description": "ADB Device Manager offers ADB Mode (mirroring, file manager, multi-window) and App Mode (calls, notifications, media control, audio cast).",
+  "softwareVersion": "1.0",
+  "downloadUrl": "https://shrey113.github.io/Adb-Device-Manager-2/releases",
+  "author": {
+    "@type": "Person",
+    "name": "Shrey113",
+    "url": "https://github.com/Shrey113"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ADB Device Manager",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://shrey113.github.io/Adb-Device-Manager-2/images/app_webp.webp"
+    },
+    "url": "https://shrey113.github.io/Adb-Device-Manager-2/"
+  },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+
+
+</html>
