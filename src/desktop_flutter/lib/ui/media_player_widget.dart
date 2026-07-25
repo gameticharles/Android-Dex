@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
+import '../models/device_state.dart';
+import '../services/app_launcher_service.dart';
+import '../services/real_adb_sync_service.dart';
+import 'smart_app_icon_widget.dart';
 
 class MediaPlayerWidget extends StatelessWidget {
-  const MediaPlayerWidget({super.key});
+  final DeviceState? deviceState;
+
+  const MediaPlayerWidget({super.key, this.deviceState});
 
   @override
   Widget build(BuildContext context) {
-    return const MediaPlayerFlyout();
+    return MediaPlayerFlyout(deviceState: deviceState);
   }
 }
 
 class MediaPlayerFlyout extends StatefulWidget {
-  const MediaPlayerFlyout({super.key});
+  final DeviceState? deviceState;
+
+  const MediaPlayerFlyout({super.key, this.deviceState});
 
   @override
   State<MediaPlayerFlyout> createState() => _MediaPlayerFlyoutState();
 }
 
 class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
-  bool _isPlaying = true;
   bool _isMuted = false;
   bool _isShuffle = false;
   bool _isRepeat = false;
@@ -32,8 +39,28 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     return "${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}";
   }
 
+  void _sendMediaKey(int keyCode) {
+    AppLauncherService.sendKeyEvent(keyCode);
+  }
+
   @override
   Widget build(BuildContext context) {
+    return widget.deviceState != null
+        ? ValueListenableBuilder<RealMediaState>(
+            valueListenable: widget.deviceState!.mediaState,
+            builder: (context, media, _) {
+              return _buildFlyoutBody(media);
+            },
+          )
+        : _buildFlyoutBody(const RealMediaState());
+  }
+
+  Widget _buildFlyoutBody(RealMediaState media) {
+    final bool isPlaying = media.isPlaying;
+    final String title = media.title.isNotEmpty ? media.title : "Starlight Horizon";
+    final String artist = media.artist.isNotEmpty ? media.artist : "Android DEX Audio Engine";
+    final String pkg = media.packageName;
+
     return Container(
       width: 360,
       padding: const EdgeInsets.all(20),
@@ -81,9 +108,9 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   border: Border.all(
                       color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
                 ),
-                child: const Text(
-                  "Low-Latency Stream",
-                  style: TextStyle(
+                child: Text(
+                  isPlaying ? "Playing on Device" : "Paused",
+                  style: const TextStyle(
                     color: Color(0xFF8B5CF6),
                     fontWeight: FontWeight.bold,
                     fontSize: 10,
@@ -104,38 +131,44 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                pkg.isNotEmpty
+                    ? SmartAppIconWidget(
+                        packageName: pkg,
+                        size: 54,
+                        borderRadius: 12,
                       )
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.graphic_eq_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
+                    : Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.graphic_eq_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Starlight Horizon",
-                        style: TextStyle(
+                        title,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -143,10 +176,10 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        "Android DEX Audio Engine",
-                        style: TextStyle(
+                        artist,
+                        style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 11,
                         ),
@@ -221,6 +254,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   size: 28,
                 ),
                 onPressed: () {
+                  _sendMediaKey(88); // KEYCODE_MEDIA_PREVIOUS
                   setState(() => _progress = 0.0);
                 },
               ),
@@ -239,12 +273,20 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                 child: IconButton(
                   iconSize: 28,
                   icon: Icon(
-                    _isPlaying
+                    isPlaying
                         ? Icons.pause_rounded
                         : Icons.play_arrow_rounded,
                     color: Colors.black,
                   ),
-                  onPressed: () => setState(() => _isPlaying = !_isPlaying),
+                  onPressed: () {
+                    if (widget.deviceState != null) {
+                      final cur = widget.deviceState!.mediaState.value;
+                      widget.deviceState!.mediaState.value = cur.copyWith(
+                        isPlaying: !cur.isPlaying,
+                      );
+                    }
+                    _sendMediaKey(85); // KEYCODE_MEDIA_PLAY_PAUSE
+                  },
                 ),
               ),
               IconButton(
@@ -254,6 +296,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   size: 28,
                 ),
                 onPressed: () {
+                  _sendMediaKey(87); // KEYCODE_MEDIA_NEXT
                   setState(() => _progress = 0.0);
                 },
               ),
@@ -282,7 +325,10 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   color: Colors.white70,
                   size: 18,
                 ),
-                onPressed: () => setState(() => _isMuted = !_isMuted),
+                onPressed: () {
+                  _sendMediaKey(164); // KEYCODE_VOLUME_MUTE
+                  setState(() => _isMuted = !_isMuted);
+                },
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -298,6 +344,11 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   child: Slider(
                     value: _isMuted ? 0.0 : _volume,
                     onChanged: (v) => setState(() {
+                      if (v > _volume) {
+                        _sendMediaKey(24); // KEYCODE_VOLUME_UP
+                      } else {
+                        _sendMediaKey(25); // KEYCODE_VOLUME_DOWN
+                      }
                       _volume = v;
                       _isMuted = v == 0;
                     }),
@@ -316,4 +367,5 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     );
   }
 }
+
 

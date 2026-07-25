@@ -339,4 +339,115 @@ class RealAdbSyncService {
       return [];
     }
   }
+
+  /// Fetch real active media session state from connected Android phone
+  static Future<RealMediaState> fetchRealMediaState() async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final result = await Process.run(adbPath, [
+        'shell',
+        'dumpsys',
+        'media_session',
+      ]);
+
+      final output = result.stdout.toString();
+
+      final audioResult = await Process.run(adbPath, [
+        'shell',
+        'dumpsys',
+        'audio',
+      ]);
+      final audioOutput = audioResult.stdout.toString();
+
+      bool isPlaying = output.contains('state=3') ||
+          output.contains('state=STATE_PLAYING') ||
+          output.contains('PlaybackState {state=3') ||
+          audioOutput.contains('isMusicActive()=true') ||
+          audioOutput.contains('mIsMusicActive=true');
+
+      String pkg = '';
+      String title = '';
+      String artist = '';
+
+      final pkgMatch = RegExp(r'package=([^\s,]+)|Sessions Stack:\s*([^\s]+)').firstMatch(output);
+      if (pkgMatch != null) {
+        pkg = (pkgMatch.group(1) ?? pkgMatch.group(2)) ?? '';
+      }
+
+      final titleMatch = RegExp(r'description=(.*?)(,\s*|$)').firstMatch(output);
+      if (titleMatch != null) {
+        title = titleMatch.group(1)?.trim() ?? '';
+      }
+
+      final metadataMatch = RegExp(r'android\.media\.metadata\.TITLE=(.*?)(?=\n|\r|android\.)').firstMatch(output);
+      if (metadataMatch != null && title.isEmpty) {
+        title = metadataMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+      }
+
+      final artistMatch = RegExp(r'android\.media\.metadata\.ARTIST=(.*?)(?=\n|\r|android\.)').firstMatch(output);
+      if (artistMatch != null) {
+        artist = artistMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim() ?? '';
+      }
+
+      if (title.isEmpty) {
+        if (pkg.isNotEmpty) {
+          final appName = pkg.split('.').last;
+          if (appName.isNotEmpty) {
+            title = appName[0].toUpperCase() + appName.substring(1);
+          } else {
+            title = "Dex Stream";
+          }
+        } else {
+          title = "Dex Stream";
+        }
+      }
+
+      if (artist.isEmpty) {
+        artist = "Android Device Audio";
+      }
+
+      return RealMediaState(
+        title: title,
+        artist: artist,
+        packageName: pkg,
+        isPlaying: isPlaying,
+      );
+    } catch (_) {
+      return const RealMediaState();
+    }
+  }
 }
+
+class RealMediaState {
+  final String title;
+  final String artist;
+  final String packageName;
+  final bool isPlaying;
+  final double positionProgress;
+
+  const RealMediaState({
+    this.title = "No Active Media",
+    this.artist = "Android DEX Audio Engine",
+    this.packageName = "",
+    this.isPlaying = false,
+    this.positionProgress = 0.0,
+  });
+
+  RealMediaState copyWith({
+    String? title,
+    String? artist,
+    String? packageName,
+    bool? isPlaying,
+    double? positionProgress,
+  }) {
+    return RealMediaState(
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      packageName: packageName ?? this.packageName,
+      isPlaying: isPlaying ?? this.isPlaying,
+      positionProgress: positionProgress ?? this.positionProgress,
+    );
+  }
+}
+
+

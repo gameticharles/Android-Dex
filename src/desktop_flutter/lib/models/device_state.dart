@@ -16,6 +16,8 @@ class DeviceState {
   final ValueNotifier<bool> isAppConnected = ValueNotifier<bool>(false);
   final ValueNotifier<List<RealNotificationItem>> notifications =
       ValueNotifier<List<RealNotificationItem>>([]);
+  final ValueNotifier<RealMediaState> mediaState =
+      ValueNotifier<RealMediaState>(const RealMediaState());
 
   void updateFromTelemetry(Map<String, dynamic> json) {
     if (json.containsKey('battery')) {

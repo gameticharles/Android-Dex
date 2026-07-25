@@ -198,9 +198,13 @@ class AdbDeviceScanner {
       }
     }
 
-    // 4. Fetch real push notifications
+    // 4. Fetch real push notifications & real media state
     final notifs = await RealAdbSyncService.fetchRealNotifications();
     state.notifications.value = notifs;
+
+    final media = await RealAdbSyncService.fetchRealMediaState();
+    state.mediaState.value = media;
+
     state.deviceIp.value = serial;
     state.isAdbConnected.value = true;
   }

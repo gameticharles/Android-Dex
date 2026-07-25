@@ -772,6 +772,7 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                     ),
                     const SizedBox(width: 6),
                     TaskbarMediaIsland(
+                      deviceState: widget.deviceState,
                       isExpanded: _activePopover == TaskbarPopoverType.media,
                       onTap: () => _togglePopover(TaskbarPopoverType.media),
                       onDismiss: () => setState(
@@ -1337,12 +1338,14 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
 }
 
 class TaskbarMediaIsland extends StatefulWidget {
+  final DeviceState? deviceState;
   final bool isExpanded;
   final VoidCallback onTap;
   final VoidCallback onDismiss;
 
   const TaskbarMediaIsland({
     super.key,
+    this.deviceState,
     required this.isExpanded,
     required this.onTap,
     required this.onDismiss,
@@ -1353,10 +1356,24 @@ class TaskbarMediaIsland extends StatefulWidget {
 }
 
 class _TaskbarMediaIslandState extends State<TaskbarMediaIsland> {
-  bool _isPlaying = true;
-
   @override
   Widget build(BuildContext context) {
+    return widget.deviceState != null
+        ? ValueListenableBuilder<RealMediaState>(
+            valueListenable: widget.deviceState!.mediaState,
+            builder: (context, media, _) {
+              return _buildCompactIsland(media);
+            },
+          )
+        : _buildCompactIsland(const RealMediaState());
+  }
+
+  Widget _buildCompactIsland(RealMediaState media) {
+    final bool isPlaying = media.isPlaying;
+    final String title =
+        media.title.isNotEmpty ? media.title : "Starlight Horizon";
+    final String pkg = media.packageName;
+
     return SmartTaskbarPopoverButton(
       isExpanded: widget.isExpanded,
       onTap: widget.onTap,
@@ -1364,56 +1381,63 @@ class _TaskbarMediaIslandState extends State<TaskbarMediaIsland> {
       compactChild: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.music_note_rounded,
-                color: Color(0xFF8B5CF6), size: 12),
-          ),
+          pkg.isNotEmpty
+              ? SmartAppIconWidget(packageName: pkg, size: 18, borderRadius: 9)
+              : Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.music_note_rounded,
+                      color: Color(0xFF8B5CF6), size: 12),
+                ),
           const SizedBox(width: 6),
-          const Text(
-            "Starlight Horizon",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 110,
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () {
-              // Action Previous
-            },
+            onTap: () => AppLauncherService.sendKeyEvent(88), // PREVIOUS
             child: const Icon(Icons.skip_previous_rounded,
                 color: Colors.white70, size: 16),
           ),
           const SizedBox(width: 4),
           GestureDetector(
             onTap: () {
-              setState(() {
-                _isPlaying = !_isPlaying;
-              });
+              if (widget.deviceState != null) {
+                final cur = widget.deviceState!.mediaState.value;
+                widget.deviceState!.mediaState.value = cur.copyWith(
+                  isPlaying: !cur.isPlaying,
+                );
+              }
+              AppLauncherService.sendKeyEvent(85); // PLAY_PAUSE
             },
             child: Icon(
-              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
               color: const Color(0xFF00BFA5),
               size: 18,
             ),
           ),
           const SizedBox(width: 4),
           GestureDetector(
-            onTap: () {
-              // Action Next
-            },
+            onTap: () => AppLauncherService.sendKeyEvent(87), // NEXT
             child: const Icon(Icons.skip_next_rounded,
                 color: Colors.white70, size: 16),
           ),
         ],
       ),
-      expandedChild: const MediaPlayerFlyout(),
+      expandedChild: MediaPlayerFlyout(deviceState: widget.deviceState),
     );
   }
 }
