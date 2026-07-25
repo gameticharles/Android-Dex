@@ -17,7 +17,8 @@ class SmartTaskbarPopoverButton extends StatefulWidget {
   });
 
   @override
-  State<SmartTaskbarPopoverButton> createState() => _SmartTaskbarPopoverButtonState();
+  State<SmartTaskbarPopoverButton> createState() =>
+      _SmartTaskbarPopoverButtonState();
 }
 
 class _SmartTaskbarPopoverButtonState extends State<SmartTaskbarPopoverButton> {
@@ -34,7 +35,8 @@ class _SmartTaskbarPopoverButtonState extends State<SmartTaskbarPopoverButton> {
         curve: Curves.easeInOutCubic,
         height: widget.isExpanded ? null : 48,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A).withValues(alpha: widget.isExpanded ? 0.95 : 0.7),
+          color: const Color(0xFF0F172A)
+              .withValues(alpha: widget.isExpanded ? 0.95 : 0.7),
           borderRadius: BorderRadius.circular(widget.isExpanded ? 24 : 16),
           border: Border.all(
             color: widget.isExpanded ? const Color(0xFF00BFA5) : Colors.white10,
@@ -62,7 +64,9 @@ class _SmartTaskbarPopoverButtonState extends State<SmartTaskbarPopoverButton> {
                 child: widget.compactChild,
               ),
               secondChild: widget.expandedChild,
-              crossFadeState: widget.isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              crossFadeState: widget.isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
               duration: const Duration(milliseconds: 250),
             ),
           ),
