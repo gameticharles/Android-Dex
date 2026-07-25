@@ -4,7 +4,7 @@
   <!-- 🏠 Main Homepage -->
   <url>
     <loc>https://shrey113.github.io/Adb-Device-Manager-2/</loc>
-    <lastmod>2025-12-19</lastmod>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -20,7 +20,7 @@
   <!-- 📚 Documentation Hub -->
   <url>
     <loc>https://shrey113.github.io/Adb-Device-Manager-2/docs/Docs.html</loc>
-    <lastmod>2025-12-19</lastmod>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -28,7 +28,15 @@
   <!-- 🛠️ Installation Guide -->
   <url>
     <loc>https://shrey113.github.io/Adb-Device-Manager-2/docs/installation.html</loc>
-    <lastmod>2025-12-19</lastmod>
+    <lastmod>2026-07-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ⌨️ Keyboard Shortcuts -->
+  <url>
+    <loc>https://shrey113.github.io/Adb-Device-Manager-2/docs/shortcuts.html</loc>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -36,7 +44,7 @@
   <!-- 🤖 Android Download -->
   <url>
     <loc>https://shrey113.github.io/Adb-Device-Manager-2/android_download.html</loc>
-    <lastmod>2025-12-19</lastmod>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -44,7 +52,15 @@
   <!-- 🪟 Windows Download -->
   <url>
     <loc>https://shrey113.github.io/Adb-Device-Manager-2/windows_download.html</loc>
-    <lastmod>2025-12-19</lastmod>
+    <lastmod>2026-07-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 🐧 Linux Download -->
+  <url>
+    <loc>https://shrey113.github.io/Adb-Device-Manager-2/pages/linux_download.html</loc>
+    <lastmod>2026-07-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>

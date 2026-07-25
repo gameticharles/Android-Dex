@@ -21,7 +21,7 @@ All shortcuts are **global hotkeys** and work even when the app is minimized.
 | Bluetooth Toggle      | **Alt + B**              | Toggle Bluetooth on device. |
 | Toggle App Window     | **Alt + O**              | Show/Hide ADB Device Manager window. |
 | Home Button           | **Alt + Home**           | Send Home action. |
-| Back Button           | **Alt + Back**           | Send Back action. |
+| Back Button           | **Alt + Backspace**      | Send Back action. |
 | Play/Pause Media      | **Alt + Space**          | Play or pause current media. |
 | Increase Volume       | **Alt + ↑ (Arrow Up)**   | Raise device volume. |
 | Decrease Volume       | **Alt + ↓ (Arrow Down)** | Lower device volume. |
