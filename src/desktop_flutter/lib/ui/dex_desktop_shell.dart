@@ -9,6 +9,7 @@ import 'app_drawer_dialog.dart';
 import 'battery_popover.dart';
 import 'file_manager_dialog.dart';
 import 'notification_flyout.dart';
+import 'media_player_widget.dart';
 import 'quick_settings_popover.dart';
 import 'smart_app_icon_widget.dart';
 import 'smart_taskbar_popover_button.dart';
@@ -17,7 +18,7 @@ import 'unified_phone_dialog.dart';
 
 import 'desktop_window_widget.dart';
 
-enum TaskbarPopoverType { none, notifications, battery, settings }
+enum TaskbarPopoverType { none, media, notifications, battery, settings }
 
 enum WindowSnapZone {
   none,
@@ -221,7 +222,8 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
 
   @override
   void dispose() {
-    widget.deviceState.isAdbConnected.removeListener(_onDeviceConnectionChanged);
+    widget.deviceState.isAdbConnected
+        .removeListener(_onDeviceConnectionChanged);
     _clockTimer.cancel();
     super.dispose();
   }
@@ -742,50 +744,40 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // ZONE 1: Left Navigation & Audio Island
-                _buildDockZone(
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.menu,
-                            color: Colors.white70, size: 18),
-                        onPressed: () => _showAppDrawer(context),
-                        tooltip: "App List",
+                Row(
+                  children: [
+                    _buildDockZone(
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.menu,
+                                color: Colors.white70, size: 18),
+                            onPressed: () => _showAppDrawer(context),
+                            tooltip: "App List",
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.circle_outlined,
+                                color: Colors.white70, size: 16),
+                            onPressed: () => AppLauncherService.sendKeyEvent(3),
+                            tooltip: "Home",
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left,
+                                color: Colors.white70, size: 20),
+                            onPressed: () => AppLauncherService.sendKeyEvent(4),
+                            tooltip: "Back",
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.circle_outlined,
-                            color: Colors.white70, size: 16),
-                        onPressed: () => AppLauncherService.sendKeyEvent(3),
-                        tooltip: "Home",
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left,
-                            color: Colors.white70, size: 20),
-                        onPressed: () => AppLauncherService.sendKeyEvent(4),
-                        tooltip: "Back",
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B).withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.music_note,
-                                color: Colors.purpleAccent, size: 12),
-                            SizedBox(width: 6),
-                            Text(
-                              "THE REPORTER WA...",
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 10),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 6),
+                    TaskbarMediaIsland(
+                      isExpanded: _activePopover == TaskbarPopoverType.media,
+                      onTap: () => _togglePopover(TaskbarPopoverType.media),
+                      onDismiss: () => setState(
+                          () => _activePopover = TaskbarPopoverType.none),
+                    ),
+                  ],
                 ),
 
                 // ZONE 2: Center App Launcher Island & Fluid Active Taskbar Dock
@@ -1104,8 +1096,6 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
     );
   }
 
-
-
   Widget _buildTaskbarDockIcon({
     required String id,
     required IconData icon,
@@ -1342,6 +1332,88 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class TaskbarMediaIsland extends StatefulWidget {
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final VoidCallback onDismiss;
+
+  const TaskbarMediaIsland({
+    super.key,
+    required this.isExpanded,
+    required this.onTap,
+    required this.onDismiss,
+  });
+
+  @override
+  State<TaskbarMediaIsland> createState() => _TaskbarMediaIslandState();
+}
+
+class _TaskbarMediaIslandState extends State<TaskbarMediaIsland> {
+  bool _isPlaying = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return SmartTaskbarPopoverButton(
+      isExpanded: widget.isExpanded,
+      onTap: widget.onTap,
+      onDismiss: widget.onDismiss,
+      compactChild: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.music_note_rounded,
+                color: Color(0xFF8B5CF6), size: 12),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            "Starlight Horizon",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              // Action Previous
+            },
+            child: const Icon(Icons.skip_previous_rounded,
+                color: Colors.white70, size: 16),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isPlaying = !_isPlaying;
+              });
+            },
+            child: Icon(
+              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: const Color(0xFF00BFA5),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () {
+              // Action Next
+            },
+            child: const Icon(Icons.skip_next_rounded,
+                color: Colors.white70, size: 16),
+          ),
+        ],
+      ),
+      expandedChild: const MediaPlayerFlyout(),
     );
   }
 }
