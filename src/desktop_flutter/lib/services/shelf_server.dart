@@ -14,7 +14,7 @@ class DesktopShelfServer {
   HttpServer? _server;
   final List<WebSocketChannel> _connectedSockets = [];
 
-  DesktopShelfServer({required this.deviceState, this.port = 8080});
+  DesktopShelfServer({required this.deviceState, this.port = 38947});
 
   Future<void> start() async {
     final router = Router();

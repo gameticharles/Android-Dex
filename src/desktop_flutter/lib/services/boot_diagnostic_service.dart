@@ -117,13 +117,13 @@ class BootDiagnosticService {
       try {
         final adbPath = await AdbDeviceScanner.getAdbPath();
         await Process.run(
+            adbPath, ['-s', activeSerial, 'forward', 'tcp:8080', 'tcp:8080']);
+        await Process.run(
             adbPath, ['-s', activeSerial, 'reverse', 'tcp:38947', 'tcp:38947']);
         await Process.run(
-            adbPath, ['-s', activeSerial, 'reverse', 'tcp:4567', 'tcp:4567']);
-        await Process.run(
-            adbPath, ['-s', activeSerial, 'reverse', 'tcp:8080', 'tcp:8080']);
+            adbPath, ['-s', activeSerial, 'forward', 'tcp:4567', 'tcp:4567']);
         steps[2].status = DiagnosticStatus.passed;
-        steps[2].detail = 'Ports 38947, 4567 & 8080 active for $activeSerial';
+        steps[2].detail = 'Forward 8080, 4567 & Reverse 38947 active for $activeSerial';
       } catch (e) {
         steps[2].status = DiagnosticStatus.warning;
         steps[2].detail = 'Port reverse warning: $e';

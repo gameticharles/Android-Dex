@@ -216,6 +216,19 @@ class MainActivity : AppCompatActivity() {
             showPermissionsScreen()
         }
 
+        // 7. Paired Computers Card
+        val pairedCard = createActionCard(
+            title = "Paired Desktop Computers",
+            subtitle = "Manage trusted DEX PCs & auto-connect settings",
+            iconRes = android.R.drawable.ic_menu_compass,
+            cardBg = cardBg,
+            iconBgColor = iconBgColor,
+            textPrimary = textPrimary,
+            textSecondary = textSecondary
+        ) {
+            showPairedComputersScreen()
+        }
+
         cardsLayout.addView(sendFileCard)
         cardsLayout.addView(createSpacer(16))
         cardsLayout.addView(presentationCard)
@@ -227,6 +240,8 @@ class MainActivity : AppCompatActivity() {
         cardsLayout.addView(themeCard)
         cardsLayout.addView(createSpacer(16))
         cardsLayout.addView(permissionsCard)
+        cardsLayout.addView(createSpacer(16))
+        cardsLayout.addView(pairedCard)
 
         // Network Status Info
         val statusCard = LinearLayout(this).apply {
@@ -1025,6 +1040,165 @@ class MainActivity : AppCompatActivity() {
             val pm = getSystemService(PowerManager::class.java)
             pm?.isIgnoringBatteryOptimizations(packageName) ?: false
         } else true
+    }
+
+    private fun showPairedComputersScreen() {
+        currentScreen = "paired_devices"
+        mainContainer.removeAllViews()
+
+        val isDark = isDarkModeActive()
+        val cardBg = if (isDark) 0xFF1E293B.toInt() else 0xFFFFFFFF.toInt()
+        val textPrimary = if (isDark) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
+        val textSecondary = if (isDark) 0xFF94A3B8.toInt() else 0xFF64748B.toInt()
+
+        val navHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, 48)
+        }
+
+        val backBtn = TextView(this).apply {
+            text = "← Back"
+            textSize = 16f
+            setTextColor(0xFF00BFA5.toInt())
+            setTypeface(null, Typeface.BOLD)
+            setOnClickListener { showHomeScreen() }
+        }
+
+        val headerTitle = TextView(this).apply {
+            text = "Paired Desktop Computers"
+            textSize = 20f
+            setTextColor(textPrimary)
+            setTypeface(null, Typeface.BOLD)
+            setPadding(32, 0, 0, 0)
+        }
+
+        navHeader.addView(backBtn)
+        navHeader.addView(headerTitle)
+        mainContainer.addView(navHeader)
+
+        val scrollView = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+            setPadding(40, 20, 40, 40)
+        }
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val manager = com.androiddex.companion.server.PairedDeviceManager(this)
+        val computers = manager.getPairedComputers()
+
+        if (computers.isEmpty()) {
+            val emptyTv = TextView(this).apply {
+                text = "No DEX Desktop computers paired yet.\nConnect your PC over USB or Wi-Fi to authorize pairing!"
+                textSize = 13f
+                setTextColor(textSecondary)
+                gravity = Gravity.CENTER
+                setPadding(40, 60, 40, 60)
+            }
+            content.addView(emptyTv)
+        } else {
+            for (comp in computers) {
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(40, 32, 40, 32)
+                    background = createRoundedDrawable(cardBg, 32f)
+                    elevation = 2f
+                }
+
+                val row1 = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+
+                val titleTv = TextView(this).apply {
+                    text = comp.name
+                    textSize = 15f
+                    setTextColor(textPrimary)
+                    setTypeface(null, Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                val statusBadge = TextView(this).apply {
+                    text = comp.status
+                    textSize = 10f
+                    setTypeface(null, Typeface.BOLD)
+                    setPadding(16, 8, 16, 8)
+                    setTextColor(0xFFFFFFFF.toInt())
+                    background = createRoundedDrawable(
+                        when (comp.status) {
+                            "APPROVED" -> 0xFF10B981.toInt()
+                            "PENDING" -> 0xFFF59E0B.toInt()
+                            else -> 0xFFEF4444.toInt()
+                        },
+                        16f
+                    )
+                }
+
+                row1.addView(titleTv)
+                row1.addView(statusBadge)
+                card.addView(row1)
+
+                val detailsTv = TextView(this).apply {
+                    text = "ID: ${comp.id.take(8)}... | IP: ${comp.ipAddress}"
+                    textSize = 11f
+                    setTextColor(textSecondary)
+                    setPadding(0, 8, 0, 16)
+                }
+                card.addView(detailsTv)
+
+                val switchRow = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+
+                val switchLabel = TextView(this).apply {
+                    text = "Always Auto-Connect"
+                    textSize = 12f
+                    setTextColor(textPrimary)
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                @Suppress("UseSwitchCompatOrMaterialCode")
+                val autoSwitch = Switch(this).apply {
+                    isChecked = comp.autoConnect
+                    setOnCheckedChangeListener { _, isChecked ->
+                        manager.updateComputerDetails(comp.id, comp.name, isChecked)
+                    }
+                }
+
+                switchRow.addView(switchLabel)
+                switchRow.addView(autoSwitch)
+                card.addView(switchRow)
+
+                val btnRow = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.END
+                    setPadding(0, 16, 0, 0)
+                }
+
+                val deleteBtn = Button(this).apply {
+                    text = "Unpair"
+                    textSize = 11f
+                    setBackgroundColor(0xFFEF4444.toInt())
+                    setTextColor(0xFFFFFFFF.toInt())
+                    setOnClickListener {
+                        manager.deleteComputer(comp.id)
+                        showPairedComputersScreen()
+                    }
+                }
+
+                btnRow.addView(deleteBtn)
+                card.addView(btnRow)
+
+                content.addView(card)
+                content.addView(createSpacer(20))
+            }
+        }
+
+        scrollView.addView(content)
+        mainContainer.addView(scrollView)
     }
 
     private fun getDeviceIpAddress(): String {

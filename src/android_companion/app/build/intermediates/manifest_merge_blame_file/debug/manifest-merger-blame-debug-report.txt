@@ -149,8 +149,8 @@
 75-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:55:13-58
 76            android:enabled="true"
 76-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:56:13-35
-77            android:exported="false"
-77-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:57:13-37
+77            android:exported="true"
+77-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:57:13-36
 78            android:foregroundServiceType="connectedDevice" />
 78-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:58:13-60
 79

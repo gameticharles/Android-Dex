@@ -34,7 +34,7 @@ class _AdbDeviceManagerAppState extends State<AdbDeviceManagerApp> {
   @override
   void initState() {
     super.initState();
-    _shelfServer = DesktopShelfServer(deviceState: _deviceState, port: 8080);
+    _shelfServer = DesktopShelfServer(deviceState: _deviceState, port: 38947);
     _shelfServer.start();
     _scanAndConnectRealDevice();
 

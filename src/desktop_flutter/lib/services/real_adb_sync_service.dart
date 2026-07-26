@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'adb_device_scanner.dart';
+import 'desktop_identity_service.dart';
 
 class RealSmsMessage {
   final String address;
@@ -453,6 +454,8 @@ class RealAdbSyncService {
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 400);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media'));
+      final token = DesktopIdentityService.activeAuthToken;
+      if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
@@ -679,6 +682,8 @@ class RealAdbSyncService {
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 300);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/seek?position_ms=$positionMs'));
+      final token = DesktopIdentityService.activeAuthToken;
+      if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       client.close();
       if (res.statusCode == 200) return;
@@ -702,6 +707,8 @@ class RealAdbSyncService {
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 300);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/control?cmd=$cmd'));
+      final token = DesktopIdentityService.activeAuthToken;
+      if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       client.close();
       if (res.statusCode == 200) return;

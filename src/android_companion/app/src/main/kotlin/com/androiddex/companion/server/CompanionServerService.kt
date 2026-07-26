@@ -17,7 +17,7 @@ import fi.iki.elonen.NanoHTTPD
 import org.json.JSONObject
 
 /**
- * Foreground Service running embedded HTTP Telemetry Server with dynamic connection tracking.
+ * Foreground Service running embedded HTTP Telemetry & Pairing Server with dynamic connection tracking.
  */
 class CompanionServerService : Service() {
 
@@ -39,6 +39,9 @@ class CompanionServerService : Service() {
     
     @Volatile
     private var lastClientIp = "127.0.0.1"
+
+    @Volatile
+    private var activeComputerName = "DEX Desktop"
 
     private val watchdogRunnable = object : Runnable {
         override fun run() {
@@ -83,9 +86,12 @@ class CompanionServerService : Service() {
         }
     }
 
-    fun updateClientActivity(clientIp: String) {
+    fun updateClientActivity(clientIp: String, computerName: String = "") {
         lastRequestTimeMs = System.currentTimeMillis()
         lastClientIp = clientIp
+        if (computerName.isNotEmpty()) {
+            activeComputerName = computerName
+        }
         if (!isConnected) {
             isConnected = true
             updateNotification()
@@ -117,7 +123,7 @@ class CompanionServerService : Service() {
         val text: String
         if (isConnected) {
             title = "Android Dex Companion • Connected"
-            text = "Streaming to Desktop ($lastClientIp) • Port 8080"
+            text = "Connected to $activeComputerName ($lastClientIp) • Streaming"
         } else {
             title = "Android Dex Companion • Waiting for Connection"
             text = "Service active on port 8080 • Ready to pair"
@@ -161,6 +167,7 @@ class CompanionServerService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     class EmbeddedHttpServer(private val context: CompanionServerService, port: Int) : NanoHTTPD(port) {
+        val pairingRoute = PairingRoute(context)
         private val mediaRoute = MediaRoute(context).apply { init() }
         private val contactsRoute = ContactsRoute(context)
         private val imageRoute = ImageRoute(context)
@@ -172,18 +179,77 @@ class CompanionServerService : Service() {
 
         override fun serve(session: IHTTPSession): Response {
             val clientIp = session.remoteIpAddress ?: "127.0.0.1"
-            context.updateClientActivity(clientIp)
-
             val uri = session.uri
             val parms = session.parms
+            val headers = session.headers
+
+            // Check authToken header or query parameter (case-insensitive)
+            val authToken = headers["x-dex-auth-token"] ?: headers["X-Dex-Auth-Token"] ?: parms["auth_token"] ?: ""
+            var verifiedComputer = if (authToken.isNotEmpty()) pairingRoute.deviceManager.getComputerByAuthToken(authToken) else null
+
+            if (verifiedComputer == null) {
+                verifiedComputer = pairingRoute.deviceManager.getPairedComputers().firstOrNull { it.status == "APPROVED" }
+            }
+
+            if (verifiedComputer != null) {
+                context.updateClientActivity(clientIp, verifiedComputer.name)
+            } else {
+                context.updateClientActivity(clientIp, "DEX Desktop")
+            }
 
             return when {
                 uri == "/ping" -> {
                     newFixedLengthResponse(
                         Response.Status.OK,
                         "application/json",
-                        JSONObject().put("status", "success").put("connected", true).toString()
+                        JSONObject().put("status", "success").put("connected", context.isConnected).toString()
                     )
+                }
+                uri == "/pairing/request" -> {
+                    val body = readBodyString(session)
+                    val result = pairingRoute.handlePairingRequest(body, clientIp)
+                    try {
+                        val resObj = JSONObject(result)
+                        val status = resObj.optString("status")
+                        val name = resObj.optString("computer_name")
+                        if (status == "APPROVED") {
+                            context.updateClientActivity(clientIp, name)
+                        }
+                    } catch (_: Exception) {}
+                    newFixedLengthResponse(Response.Status.OK, "application/json", result)
+                }
+                uri == "/pairing/status" -> {
+                    val deviceId = parms["device_id"] ?: parms["id"] ?: ""
+                    val result = pairingRoute.handlePairingStatus(deviceId)
+                    try {
+                        val resObj = JSONObject(result)
+                        val status = resObj.optString("status")
+                        val name = resObj.optString("computer_name")
+                        if (status == "APPROVED") {
+                            context.updateClientActivity(clientIp, name)
+                        }
+                    } catch (_: Exception) {}
+                    newFixedLengthResponse(Response.Status.OK, "application/json", result)
+                }
+                uri == "/pairing/respond" -> {
+                    val deviceId = parms["device_id"] ?: parms["id"] ?: ""
+                    val action = parms["action"] ?: "accept"
+                    val autoConnect = parms["auto_connect"]?.toBoolean() ?: true
+                    val result = pairingRoute.handlePairingRespond(deviceId, action, autoConnect)
+                    newFixedLengthResponse(Response.Status.OK, "application/json", result)
+                }
+                uri == "/pairing/devices" -> {
+                    newFixedLengthResponse(Response.Status.OK, "application/json", pairingRoute.getPairedDevicesJson())
+                }
+                uri == "/pairing/update_device" -> {
+                    val deviceId = parms["device_id"] ?: parms["id"] ?: ""
+                    val newName = parms["name"] ?: ""
+                    val autoConnect = parms["auto_connect"]?.toBoolean() ?: true
+                    newFixedLengthResponse(Response.Status.OK, "application/json", pairingRoute.handleUpdateDevice(deviceId, newName, autoConnect))
+                }
+                uri == "/pairing/delete_device" -> {
+                    val deviceId = parms["device_id"] ?: parms["id"] ?: ""
+                    newFixedLengthResponse(Response.Status.OK, "application/json", pairingRoute.handleDeleteDevice(deviceId))
                 }
                 uri == "/media" -> {
                     newFixedLengthResponse(
@@ -341,6 +407,16 @@ class CompanionServerService : Service() {
                     )
                 }
                 else -> newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "404 Not Found")
+            }
+        }
+
+        private fun readBodyString(session: IHTTPSession): String {
+            val map = HashMap<String, String>()
+            return try {
+                session.parseBody(map)
+                map["postData"] ?: ""
+            } catch (_: Exception) {
+                ""
             }
         }
     }

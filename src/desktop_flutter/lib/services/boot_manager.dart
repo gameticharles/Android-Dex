@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'adb_device_scanner.dart';
+import 'pairing_service.dart';
 
 /// Performance-Optimized Boot Manager with MD5 Hash Caching & Parallel Steps.
 class BootManager {
@@ -27,11 +28,11 @@ class BootManager {
         _runAdb(['tcpip', '5555']).catchError((_) => "");
       }
 
-      // Step 2: Reverse Port Forwarding
-      onProgress(0.20, "Configuring reverse ports (38947, 4567, 8080)...");
+      // Step 2: ADB Forward & Reverse Port Forwarding
+      onProgress(0.20, "Configuring ADB network ports (8080, 38947, 4567)...");
+      await _runAdb(['forward', 'tcp:8080', 'tcp:8080']);
       await _runAdb(['reverse', 'tcp:38947', 'tcp:38947']);
-      await _runAdb(['reverse', 'tcp:4567', 'tcp:4567']);
-      await _runAdb(['reverse', 'tcp:8080', 'tcp:8080']);
+      await _runAdb(['forward', 'tcp:4567', 'tcp:4567']);
 
       // Step 3 & 4: PARALLEL EXECUTION (Performance Fix #2)
       // Concurrently check JAR hash and package status
@@ -62,16 +63,41 @@ class BootManager {
         }
       }
 
-      onProgress(0.78, "Starting companion services...");
+      onProgress(0.78, "Starting companion server service...");
       await _runAdb([
         'shell',
-        'am', 'startservice',
-        '-n', '$companionPackage/.InitializationService'
-      ]);
+        'am', 'startforegroundservice',
+        '-n', '$companionPackage/.server.CompanionServerService'
+      ]).catchError((_) => "");
 
-      // Step 6: Final Handshake
-      onProgress(0.93, "Waiting for system handshake...");
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Step 6: Pairing Handshake Protocol & Security Authorization
+      onProgress(0.85, "Requesting DEX Companion Authorization...");
+      final pairing = await PairingService.requestPairing();
+
+      if (pairing.status == "APPROVED") {
+        onProgress(1.00, "System Ready");
+        return true;
+      } else if (pairing.status == "PENDING") {
+        onProgress(0.90, "AUTHORIZATION_PENDING");
+        // Poll for authorization for up to 45 seconds
+        final int startTime = DateTime.now().millisecondsSinceEpoch;
+        while (DateTime.now().millisecondsSinceEpoch - startTime < 45000) {
+          await Future.delayed(const Duration(seconds: 1));
+          final check = await PairingService.checkPairingStatus();
+          if (check.status == "APPROVED") {
+            onProgress(1.00, "System Ready");
+            return true;
+          } else if (check.status == "REJECTED") {
+            onProgress(0.00, "Connection Request Rejected on Android Companion.");
+            return false;
+          }
+        }
+        onProgress(0.00, "Authorization Timeout: Please accept pairing on phone.");
+        return false;
+      } else if (pairing.status == "REJECTED") {
+        onProgress(0.00, "Connection Request Rejected on Android Companion.");
+        return false;
+      }
 
       onProgress(1.00, "System Ready");
       return true;
