@@ -994,6 +994,12 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            list.add(PermissionModel("Post Notifications", "Required to display persistent connection status notification", checkPerm(Manifest.permission.POST_NOTIFICATIONS)) {
+                ActivityCompat.requestPermissions(it, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 107)
+            })
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             list.add(PermissionModel("Bluetooth Connect", "Required to monitor connected Bluetooth devices", checkPerm(Manifest.permission.BLUETOOTH_CONNECT)) {
                 ActivityCompat.requestPermissions(it, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 105)

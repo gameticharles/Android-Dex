@@ -52,7 +52,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
   void _syncPlaybackState() {
     final media = widget.deviceState?.mediaState.value ?? const RealMediaState();
     if (!_isDraggingSlider) {
-      _currentPosMs = media.positionMs;
+      _currentPosMs = media.currentLivePositionMs;
     }
     _manageTicker(media.isPlaying, media.durationMs);
   }
@@ -60,15 +60,12 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
   void _manageTicker(bool isPlaying, int durationMs) {
     if (isPlaying) {
       if (_playbackTicker == null || !_playbackTicker!.isActive) {
-        _playbackTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+        _playbackTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
           if (mounted) {
             final curMedia = widget.deviceState?.mediaState.value ?? const RealMediaState();
             if (curMedia.isPlaying && !_isDraggingSlider) {
-              final maxMs = curMedia.durationMs > 0 ? curMedia.durationMs : 225000;
               setState(() {
-                if (_currentPosMs < maxMs) {
-                  _currentPosMs += 1000;
-                }
+                _currentPosMs = curMedia.currentLivePositionMs;
               });
             }
           }
@@ -93,10 +90,51 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
   }
 
   Widget _buildArtworkWidget(RealMediaState media) {
+    Widget baseArt;
     if (media.artworkBase64 != null && media.artworkBase64!.isNotEmpty) {
       try {
         final bytes = base64Decode(media.artworkBase64!);
-        return Container(
+        baseArt = Image.memory(bytes, fit: BoxFit.cover);
+      } catch (_) {
+        baseArt = _buildFallbackArtwork(media.packageName);
+      }
+    } else if (media.artworkUrl != null && media.artworkUrl!.isNotEmpty) {
+      baseArt = Image.network(
+        media.artworkUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackArtwork(media.packageName),
+      );
+    } else {
+      baseArt = _buildFallbackArtwork(media.packageName);
+    }
+
+    Widget? appBadge;
+    if (media.appIconBase64 != null && media.appIconBase64!.isNotEmpty) {
+      try {
+        final iconBytes = base64Decode(media.appIconBase64!);
+        appBadge = Positioned(
+          right: -2,
+          bottom: -2,
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white30, width: 1.5),
+            ),
+            child: ClipOval(
+              child: Image.memory(iconBytes, fit: BoxFit.cover),
+            ),
+          ),
+        );
+      } catch (_) {}
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
           width: 54,
           height: 54,
           decoration: BoxDecoration(
@@ -111,36 +149,12 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.memory(bytes, fit: BoxFit.cover),
-          ),
-        );
-      } catch (_) {}
-    } else if (media.artworkUrl != null && media.artworkUrl!.isNotEmpty) {
-      return Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            media.artworkUrl!,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _buildFallbackArtwork(media.packageName),
+            child: baseArt,
           ),
         ),
-      );
-    }
-
-    return _buildFallbackArtwork(media.packageName);
+        if (appBadge != null) appBadge,
+      ],
+    );
   }
 
   Widget _buildFallbackArtwork(String pkg) {
@@ -184,7 +198,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
             valueListenable: widget.deviceState!.mediaState,
             builder: (context, media, _) {
               if (!_isDraggingSlider) {
-                _currentPosMs = media.positionMs;
+                _currentPosMs = media.currentLivePositionMs;
               }
               _manageTicker(media.isPlaying, media.durationMs);
               return _buildFlyoutBody(media);
@@ -199,7 +213,6 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     final String artist = media.artist.isNotEmpty ? media.artist : "Android DEX Audio Engine";
     final String album = media.album;
     final int totalDurationMs = media.durationMs > 0 ? media.durationMs : 225000;
-
     final double currentProgress = _isDraggingSlider
         ? _dragProgress
         : (_currentPosMs / totalDurationMs).clamp(0.0, 1.0);
@@ -392,6 +405,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   size: 28,
                 ),
                 onPressed: () {
+                  RealAdbSyncService.sendTransportCommand("prev");
                   _sendMediaKey(88); // KEYCODE_MEDIA_PREVIOUS
                   setState(() => _currentPosMs = 0);
                 },
@@ -417,6 +431,8 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                     color: Colors.black,
                   ),
                   onPressed: () {
+                    final cmd = isPlaying ? "pause" : "play";
+                    RealAdbSyncService.sendTransportCommand(cmd);
                     if (widget.deviceState != null) {
                       final cur = widget.deviceState!.mediaState.value;
                       widget.deviceState!.mediaState.value = cur.copyWith(
@@ -434,6 +450,7 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                   size: 28,
                 ),
                 onPressed: () {
+                  RealAdbSyncService.sendTransportCommand("next");
                   _sendMediaKey(87); // KEYCODE_MEDIA_NEXT
                   setState(() => _currentPosMs = 0);
                 },

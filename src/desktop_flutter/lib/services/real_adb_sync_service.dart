@@ -6,11 +6,13 @@ class RealSmsMessage {
   final String address;
   final String body;
   final String date;
+  final bool isSent;
 
   RealSmsMessage({
     required this.address,
     required this.body,
     required this.date,
+    this.isSent = false,
   });
 }
 
@@ -63,49 +65,105 @@ class RealNotificationItem {
 }
 
 class RealAdbSyncService {
-  /// Normalize phone number to last 9 digits for cross-matching
+  /// Normalize phone numbers for comparison
   static String normalizeNumber(String raw) {
-    String clean = raw.replaceAll(RegExp(r'[^\d]'), '');
-    if (clean.length > 9) {
+    var clean = raw.replaceAll(RegExp(r'[^\d+]'), '');
+    if (clean.length >= 9) {
       clean = clean.substring(clean.length - 9);
     }
     return clean;
   }
 
-  /// Fetch real live SMS from Android phone
+  /// Fetch real live SMS (inbox & sent) from Android phone
   static Future<List<RealSmsMessage>> fetchRealSms() async {
-    final adbPath = await AdbDeviceScanner.getAdbPath();
-    final result = await Process.run(
-        adbPath, ['shell', 'content', 'query', '--uri', 'content://sms/inbox']);
-
-    final blocks = result.stdout.toString().split('Row: ');
-    final List<RealSmsMessage> messages = [];
-
-    for (final block in blocks) {
-      if (block.trim().isEmpty) continue;
-      final single = block.replaceAll('\n', ' ');
-
-      String address = 'Unknown';
-      String body = '';
-      String date = '';
-
-      final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
-      if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? 'Unknown';
-
-      final bodyMatch = RegExp(
-              r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)')
-          .firstMatch(single);
-      if (bodyMatch != null) body = bodyMatch.group(1)?.trim() ?? '';
-
-      final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
-      if (dateMatch != null) date = dateMatch.group(1)?.trim() ?? '';
-
-      if (body.isNotEmpty) {
-        messages.add(RealSmsMessage(address: address, body: body, date: date));
+    // 1. Try Android Companion HTTP endpoint /sms
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 600);
+      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/sms'));
+      final res = await req.close();
+      if (res.statusCode == 200) {
+        final bodyStr = await res.transform(utf8.decoder).join();
+        client.close();
+        final json = jsonDecode(bodyStr) as Map<String, dynamic>;
+        final convs = json['conversations'] as List?;
+        if (convs != null && convs.isNotEmpty) {
+          final List<RealSmsMessage> result = [];
+          for (final c in convs) {
+            final threadId = c['thread_id'];
+            if (threadId != null) {
+              try {
+                final mClient = HttpClient();
+                mClient.connectionTimeout = const Duration(milliseconds: 400);
+                final mReq = await mClient.getUrl(Uri.parse('http://127.0.0.1:8080/sms/messages?thread_id=$threadId'));
+                final mRes = await mReq.close();
+                if (mRes.statusCode == 200) {
+                  final mStr = await mRes.transform(utf8.decoder).join();
+                  final mJson = jsonDecode(mStr) as Map<String, dynamic>;
+                  final msgs = mJson['messages'] as List?;
+                  if (msgs != null) {
+                    for (final m in msgs) {
+                      result.add(RealSmsMessage(
+                        address: m['address']?.toString() ?? '',
+                        body: m['body']?.toString() ?? '',
+                        date: m['date']?.toString() ?? '',
+                        isSent: m['is_sent'] == true,
+                      ));
+                    }
+                  }
+                }
+                mClient.close();
+              } catch (_) {}
+            }
+          }
+          if (result.isNotEmpty) return result;
+        }
       }
-    }
+    } catch (_) {}
 
-    return messages;
+    // 2. Fallback to ADB content query for content://sms
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final result = await Process.run(
+          adbPath, ['shell', 'content', 'query', '--uri', 'content://sms']);
+
+      final blocks = result.stdout.toString().split('Row: ');
+      final List<RealSmsMessage> messages = [];
+
+      for (final block in blocks) {
+        if (block.trim().isEmpty) continue;
+        final single = block.replaceAll('\n', ' ');
+
+        String address = 'Unknown';
+        String body = '';
+        String date = '';
+        bool isSent = false;
+
+        final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
+        if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? 'Unknown';
+
+        final bodyMatch = RegExp(
+                r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)')
+            .firstMatch(single);
+        if (bodyMatch != null) body = bodyMatch.group(1)?.trim() ?? '';
+
+        final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
+        if (dateMatch != null) date = dateMatch.group(1)?.trim() ?? '';
+
+        final typeMatch = RegExp(r'type=([0-9]+)').firstMatch(single);
+        if (typeMatch != null && typeMatch.group(1) == '2') {
+          isSent = true;
+        }
+
+        if (body.isNotEmpty) {
+          messages.add(RealSmsMessage(address: address, body: body, date: date, isSent: isSent));
+        }
+      }
+
+      return messages;
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Send real SMS to recipient via Companion HTTP or ADB fallback
@@ -407,9 +465,11 @@ class RealAdbSyncService {
         final pkg = json['package_name']?.toString() ?? '';
         final isPlaying = json['is_playing'] == true;
         final posMs = (json['position_ms'] as num?)?.toInt() ?? 0;
+        final lastPosUpdate = (json['last_position_update_time'] as num?)?.toInt() ?? 0;
         final durMs = (json['duration_ms'] as num?)?.toInt() ?? 0;
         final artBase64 = json['artwork_base64']?.toString();
         final artUrl = json['artwork_url']?.toString();
+        final appIconBase64 = json['app_icon_base64']?.toString();
 
         if (title.isNotEmpty && title != "No Active Media") {
           return RealMediaState(
@@ -419,10 +479,12 @@ class RealAdbSyncService {
             packageName: pkg,
             isPlaying: isPlaying,
             positionMs: posMs,
+            lastPositionUpdateTime: lastPosUpdate,
             durationMs:
                 durMs > 0 ? durMs : (currentState?.durationMs ?? 225000),
             artworkBase64: artBase64 ?? currentState?.artworkBase64,
             artworkUrl: artUrl ?? currentState?.artworkUrl,
+            appIconBase64: appIconBase64 ?? currentState?.appIconBase64,
           );
         }
       }
@@ -614,6 +676,15 @@ class RealAdbSyncService {
   /// Send seek command to active Android MediaSession
   static Future<void> seekMedia(int positionMs) async {
     try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 300);
+      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/seek?position_ms=$positionMs'));
+      final res = await req.close();
+      client.close();
+      if (res.statusCode == 200) return;
+    } catch (_) {}
+
+    try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
       await Process.run(adbPath, [
         'shell',
@@ -622,6 +693,18 @@ class RealAdbSyncService {
         'seek',
         positionMs.toString(),
       ]);
+    } catch (_) {}
+  }
+
+  /// Send transport control command to active Android MediaSession (play, pause, next, prev)
+  static Future<void> sendTransportCommand(String cmd) async {
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 300);
+      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/control?cmd=$cmd'));
+      final res = await req.close();
+      client.close();
+      if (res.statusCode == 200) return;
     } catch (_) {}
   }
 }
@@ -633,9 +716,11 @@ class RealMediaState {
   final String packageName;
   final bool isPlaying;
   final int positionMs;
+  final int lastPositionUpdateTime;
   final int durationMs;
   final String? artworkBase64;
   final String? artworkUrl;
+  final String? appIconBase64;
 
   const RealMediaState({
     this.title = "No Active Media",
@@ -644,14 +729,28 @@ class RealMediaState {
     this.packageName = "",
     this.isPlaying = false,
     this.positionMs = 0,
+    this.lastPositionUpdateTime = 0,
     this.durationMs = 225000,
     this.artworkBase64,
     this.artworkUrl,
+    this.appIconBase64,
   });
+
+  /// Compute current live position considering time elapsed since last update
+  int get currentLivePositionMs {
+    if (!isPlaying || lastPositionUpdateTime <= 0) {
+      return positionMs;
+    }
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    final int elapsed = now - lastPositionUpdateTime;
+    if (elapsed <= 0) return positionMs;
+    final int calculated = positionMs + elapsed;
+    return durationMs > 0 ? calculated.clamp(0, durationMs) : calculated;
+  }
 
   double get positionProgress {
     if (durationMs <= 0) return 0.0;
-    final double p = positionMs / durationMs;
+    final double p = currentLivePositionMs / durationMs;
     return p.clamp(0.0, 1.0);
   }
 
@@ -662,9 +761,11 @@ class RealMediaState {
     String? packageName,
     bool? isPlaying,
     int? positionMs,
+    int? lastPositionUpdateTime,
     int? durationMs,
     String? artworkBase64,
     String? artworkUrl,
+    String? appIconBase64,
   }) {
     return RealMediaState(
       title: title ?? this.title,
@@ -673,9 +774,11 @@ class RealMediaState {
       packageName: packageName ?? this.packageName,
       isPlaying: isPlaying ?? this.isPlaying,
       positionMs: positionMs ?? this.positionMs,
+      lastPositionUpdateTime: lastPositionUpdateTime ?? this.lastPositionUpdateTime,
       durationMs: durationMs ?? this.durationMs,
       artworkBase64: artworkBase64 ?? this.artworkBase64,
       artworkUrl: artworkUrl ?? this.artworkUrl,
+      appIconBase64: appIconBase64 ?? this.appIconBase64,
     );
   }
 }

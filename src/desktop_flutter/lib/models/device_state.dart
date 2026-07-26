@@ -48,9 +48,11 @@ class DeviceState {
           packageName: (m['package_name'] ?? m['packageName'])?.toString() ?? mediaState.value.packageName,
           isPlaying: (m['is_playing'] ?? m['isPlaying']) as bool? ?? mediaState.value.isPlaying,
           positionMs: (m['position_ms'] ?? m['positionMs']) as int? ?? mediaState.value.positionMs,
+          lastPositionUpdateTime: (m['last_position_update_time'] ?? m['lastPositionUpdateTime']) as int? ?? mediaState.value.lastPositionUpdateTime,
           durationMs: (m['duration_ms'] ?? m['durationMs']) as int? ?? mediaState.value.durationMs,
           artworkBase64: (m['artwork'] ?? m['artwork_base64'] ?? m['artworkBase64'])?.toString() ?? mediaState.value.artworkBase64,
           artworkUrl: (m['artwork_url'] ?? m['artworkUrl'])?.toString() ?? mediaState.value.artworkUrl,
+          appIconBase64: (m['app_icon_base64'] ?? m['appIconBase64'])?.toString() ?? mediaState.value.appIconBase64,
         );
       }
     }

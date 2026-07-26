@@ -4,8 +4,26 @@ import 'package:flutter/material.dart';
 import '../services/adb_device_scanner.dart';
 import '../services/real_adb_sync_service.dart';
 
+class SmsThread {
+  final String address;
+  final String normalizedNumber;
+  final String contactName;
+  final String latestMessage;
+  final int latestTimestamp;
+  final List<RealSmsMessage> messages;
+
+  SmsThread({
+    required this.address,
+    required this.normalizedNumber,
+    required this.contactName,
+    required this.latestMessage,
+    required this.latestTimestamp,
+    required this.messages,
+  });
+}
+
 class UnifiedPhoneDialog extends StatefulWidget {
-  final int initialSubTab; // 0: ALL, 1: MISSED, 2: CONTACTS, 3: DIAL
+  final int initialSubTab; // 0: ALL, 1: MISSED, 2: CONTACTS, 3: SMS, 4: DIAL
   final bool isWindow;
 
   const UnifiedPhoneDialog({
@@ -22,16 +40,18 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
   late int _activeSubTab;
   List<RealCallLogItem> _callLogs = [];
   List<RealContactItem> _contacts = [];
-  List<RealSmsMessage> _smsMessages = [];
+  List<RealSmsMessage> _rawSmsMessages = [];
+  List<SmsThread> _smsThreads = [];
   bool _isLoading = true;
   bool _isSendingSms = false;
 
-  // Selected Item for Right Detail View
+  // Selected Item for Right Detail View (RealCallLogItem | RealContactItem | SmsThread)
   Object? _selectedItem;
 
   final TextEditingController _dialerController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _smsComposerController = TextEditingController();
+  final ScrollController _chatScrollController = ScrollController();
 
   @override
   void initState() {
@@ -46,14 +66,70 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     final logs = await RealAdbSyncService.fetchRealCallLogs();
     final sms = await RealAdbSyncService.fetchRealSms();
 
+    final threads = _groupSmsThreads(sms, contacts);
+
     if (mounted) {
       setState(() {
         _contacts = contacts;
         _callLogs = logs;
-        _smsMessages = sms;
+        _rawSmsMessages = sms;
+        _smsThreads = threads;
         _isLoading = false;
+
+        if (_activeSubTab == 3 && _smsThreads.isNotEmpty && _selectedItem == null) {
+          _selectedItem = _smsThreads.first;
+        }
       });
     }
+  }
+
+  List<SmsThread> _groupSmsThreads(List<RealSmsMessage> messages, List<RealContactItem> contacts) {
+    final Map<String, List<RealSmsMessage>> grouped = {};
+
+    for (final msg in messages) {
+      if (msg.address.trim().isEmpty) continue;
+      final norm = RealAdbSyncService.normalizeNumber(msg.address);
+      final key = norm.isNotEmpty ? norm : msg.address.trim();
+      grouped.putIfAbsent(key, () => []).add(msg);
+    }
+
+    final List<SmsThread> threads = [];
+
+    grouped.forEach((key, msgList) {
+      msgList.sort((a, b) {
+        final tA = int.tryParse(a.date) ?? 0;
+        final tB = int.tryParse(b.date) ?? 0;
+        return tA.compareTo(tB);
+      });
+
+      final latestMsg = msgList.last;
+      final displayAddress = msgList.firstWhere(
+        (m) => m.address.isNotEmpty && m.address != 'Unknown',
+        orElse: () => latestMsg,
+      ).address;
+
+      String contactName = displayAddress;
+      for (final c in contacts) {
+        if (RealAdbSyncService.normalizeNumber(c.number) == key && c.name.isNotEmpty) {
+          contactName = c.name;
+          break;
+        }
+      }
+
+      final timestamp = int.tryParse(latestMsg.date) ?? 0;
+
+      threads.add(SmsThread(
+        address: displayAddress,
+        normalizedNumber: key,
+        contactName: contactName,
+        latestMessage: latestMsg.body,
+        latestTimestamp: timestamp,
+        messages: msgList,
+      ));
+    });
+
+    threads.sort((a, b) => b.latestTimestamp.compareTo(a.latestTimestamp));
+    return threads;
   }
 
   Future<void> _sendSms(String number) async {
@@ -63,16 +139,48 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     setState(() => _isSendingSms = true);
     final ok = await RealAdbSyncService.sendSms(number, text);
     if (mounted) {
+      final newMsg = RealSmsMessage(
+        address: number,
+        body: text,
+        date: DateTime.now().millisecondsSinceEpoch.toString(),
+        isSent: true,
+      );
+
       setState(() {
         _isSendingSms = false;
         if (ok) {
-          _smsMessages.insert(
-            0,
-            RealSmsMessage(address: number, body: text, date: DateTime.now().millisecondsSinceEpoch.toString()),
+          _rawSmsMessages.add(newMsg);
+          _smsThreads = _groupSmsThreads(_rawSmsMessages, _contacts);
+
+          // Keep selection on active thread
+          final norm = RealAdbSyncService.normalizeNumber(number);
+          final updatedThread = _smsThreads.firstWhere(
+            (t) => t.normalizedNumber == norm || t.address == number,
+            orElse: () => SmsThread(
+              address: number,
+              normalizedNumber: norm,
+              contactName: number,
+              latestMessage: text,
+              latestTimestamp: DateTime.now().millisecondsSinceEpoch,
+              messages: [newMsg],
+            ),
           );
+          _selectedItem = updatedThread;
           _smsComposerController.clear();
         }
       });
+
+      // Scroll to bottom after post
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_chatScrollController.hasClients) {
+          _chatScrollController.animateTo(
+            _chatScrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok ? "SMS sent to $number" : "Failed to send SMS"),
@@ -107,6 +215,18 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     });
   }
 
+  String _formatSmsTime(int timestampMs) {
+    if (timestampMs <= 0) return '';
+    final dt = DateTime.fromMillisecondsSinceEpoch(timestampMs);
+    final now = DateTime.now();
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    if (dt.year == now.year && dt.month == now.month && dt.day == now.day) {
+      return "$h:$m";
+    }
+    return "${dt.month}/${dt.day} $h:$m";
+  }
+
   @override
   Widget build(BuildContext context) {
     final missedLogs = _callLogs.where((l) => l.type == '3').toList();
@@ -133,29 +253,20 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.phone, color: Color(0xFF00BFA5), size: 16),
+                      Icon(Icons.phone_in_talk, color: Color(0xFF00BFA5), size: 16),
                       SizedBox(width: 8),
                       Text(
-                        "Phone & Calls",
+                        "Phone & Conversations",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
                       ),
-                      Icon(Icons.arrow_drop_down, color: Colors.grey, size: 16),
                     ],
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.push_pin_outlined, color: Colors.grey, size: 16),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.crop_square, color: Colors.grey, size: 16),
-                        onPressed: () {},
-                      ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.grey, size: 16),
                         onPressed: () => Navigator.pop(context),
@@ -166,7 +277,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
               ),
             ),
 
-          // Main Dual-Pane Workspace (Left Master Pane + Right Detail Pane)
+          // Main Dual-Pane Workspace
           Expanded(
             child: Row(
               children: [
@@ -178,10 +289,9 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                   ),
                   child: Column(
                     children: [
-                      // Pane Header: Title + Refresh + Clear All
+                      // Pane Header
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -196,17 +306,9 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.refresh,
-                                      color: Colors.grey, size: 18),
+                                  icon: const Icon(Icons.refresh, color: Colors.grey, size: 18),
                                   onPressed: _loadData,
-                                  tooltip: "Sync Calls & Contacts",
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.redAccent, size: 18),
-                                  onPressed: () =>
-                                      setState(() => _callLogs.clear()),
-                                  tooltip: "Clear Call Logs",
+                                  tooltip: "Sync Calls, Contacts & SMS",
                                 ),
                               ],
                             ),
@@ -216,7 +318,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
 
                       // Sub-tabs: ALL | MISSED | CONTACTS | SMS | DIAL
                       Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E293B),
@@ -237,25 +339,14 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                       // Sub-tab View Content
                       Expanded(
                         child: _isLoading
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                    color: Color(0xFF00BFA5)))
+                            ? const Center(child: CircularProgressIndicator(color: Color(0xFF00BFA5)))
                             : IndexedStack(
                                 index: _activeSubTab,
                                 children: [
-                                  // 0: ALL LOGS
                                   _buildCallLogsList(_callLogs),
-
-                                  // 1: MISSED LOGS
                                   _buildCallLogsList(missedLogs),
-
-                                  // 2: CONTACTS
                                   _buildContactsList(filteredContacts),
-
-                                  // 3: SMS THREADS
-                                  _buildSmsList(_smsMessages),
-
-                                  // 4: DIALER KEYPAD
+                                  _buildSmsThreadsList(_smsThreads),
                                   _buildKeypadPane(),
                                 ],
                               ),
@@ -264,7 +355,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                   ),
                 ),
 
-                // RIGHT DETAIL PANE (Width: Expanded)
+                // RIGHT DETAIL PANE
                 Expanded(
                   child: _buildRightDetailPane(),
                 ),
@@ -290,7 +381,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             width: 880,
             height: 640,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.92),
+              color: const Color(0xFF0F172A).withValues(alpha: 0.94),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               boxShadow: [
@@ -312,15 +403,20 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     final isActive = _activeSubTab == index;
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _activeSubTab = index),
+        onTap: () {
+          setState(() {
+            _activeSubTab = index;
+            if (index == 3 && _smsThreads.isNotEmpty) {
+              _selectedItem = _smsThreads.first;
+            }
+          });
+        },
         borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: isActive
-                ? const Color(0xFF00BFA5)
-                : Colors.transparent,
+            color: isActive ? const Color(0xFF00BFA5) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
@@ -361,18 +457,12 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF00BFA5).withValues(alpha: 0.15)
-                  : Colors.transparent,
+              color: isSelected ? const Color(0xFF00BFA5).withValues(alpha: 0.15) : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
-              border: isSelected
-                  ? Border.all(
-                      color: const Color(0xFF00BFA5).withValues(alpha: 0.4))
-                  : null,
+              border: isSelected ? Border.all(color: const Color(0xFF00BFA5).withValues(alpha: 0.4)) : null,
             ),
             child: Row(
               children: [
-                // Status Icon Avatar
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: isMissed
@@ -381,22 +471,12 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                           ? Colors.green.withValues(alpha: 0.2)
                           : Colors.blue.withValues(alpha: 0.2),
                   child: Icon(
-                    isMissed
-                        ? Icons.call_missed
-                        : isIncoming
-                            ? Icons.call_received
-                            : Icons.call_made,
-                    color: isMissed
-                        ? Colors.redAccent
-                        : isIncoming
-                            ? Colors.greenAccent
-                            : Colors.blueAccent,
+                    isMissed ? Icons.call_missed : isIncoming ? Icons.call_received : Icons.call_made,
+                    color: isMissed ? Colors.redAccent : isIncoming ? Colors.greenAccent : Colors.blueAccent,
                     size: 14,
                   ),
                 ),
                 const SizedBox(width: 10),
-
-                // Name & Details
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,59 +487,18 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight:
-                              isMissed ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isMissed ? FontWeight.bold : FontWeight.w500,
                           fontSize: 12,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            isMissed
-                                ? Icons.south_west
-                                : isIncoming
-                                    ? Icons.south_west
-                                    : Icons.north_east,
-                            color: isMissed
-                                ? Colors.redAccent
-                                : isIncoming
-                                    ? Colors.greenAccent
-                                    : Colors.blueAccent,
-                            size: 10,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isMissed
-                                ? "missed"
-                                : isIncoming
-                                    ? "incoming"
-                                    : "outgoing",
-                            style: TextStyle(
-                              color: isMissed
-                                  ? Colors.redAccent
-                                  : isIncoming
-                                      ? Colors.greenAccent
-                                      : Colors.blueAccent,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            call.duration != '0' ? "${call.duration}s" : "Not connected",
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 10),
-                          ),
-                        ],
+                      Text(
+                        call.duration != '0' ? "${call.duration}s" : "Not connected",
+                        style: const TextStyle(color: Colors.grey, fontSize: 10),
                       ),
                     ],
                   ),
                 ),
-
-                // Timestamp
-                Text(
-                  call.timestamp,
-                  style: const TextStyle(color: Colors.grey, fontSize: 10),
-                ),
+                Text(call.timestamp, style: const TextStyle(color: Colors.grey, fontSize: 10)),
               ],
             ),
           ),
@@ -481,8 +520,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             decoration: InputDecoration(
               hintText: "Search contacts...",
               hintStyle: const TextStyle(color: Colors.grey, fontSize: 11),
-              prefixIcon:
-                  const Icon(Icons.search, color: Colors.grey, size: 16),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 16),
               filled: true,
               fillColor: const Color(0xFF1E293B),
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
@@ -495,9 +533,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
         ),
         Expanded(
           child: contacts.isEmpty
-              ? const Center(
-                  child: Text("No contacts found",
-                      style: TextStyle(color: Colors.grey)))
+              ? const Center(child: Text("No contacts found", style: TextStyle(color: Colors.grey)))
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   itemCount: contacts.length,
@@ -510,26 +546,19 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF00BFA5).withValues(alpha: 0.15)
-                              : Colors.transparent,
+                          color: isSelected ? const Color(0xFF00BFA5).withValues(alpha: 0.15) : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           children: [
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: const Color(0xFF00BFA5)
-                                  .withValues(alpha: 0.2),
+                              backgroundColor: const Color(0xFF00BFA5).withValues(alpha: 0.2),
                               child: Text(
-                                c.name.isNotEmpty
-                                    ? c.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                    color: Color(0xFF00BFA5), fontSize: 11),
+                                c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                                style: const TextStyle(color: Color(0xFF00BFA5), fontSize: 11),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -538,14 +567,9 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(c.name,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500),
+                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
                                       maxLines: 1),
-                                  Text(c.number,
-                                      style: const TextStyle(
-                                          color: Colors.grey, fontSize: 10)),
+                                  Text(c.number, style: const TextStyle(color: Colors.grey, fontSize: 10)),
                                 ],
                               ),
                             ),
@@ -560,59 +584,75 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     );
   }
 
-  // LEFT PANE: SMS LIST
-  Widget _buildSmsList(List<RealSmsMessage> messages) {
-    if (messages.isEmpty) {
+  // LEFT PANE: SMS THREADS LIST (Deduplicated, grouped by unique contact/number)
+  Widget _buildSmsThreadsList(List<SmsThread> threads) {
+    if (threads.isEmpty) {
       return const Center(
-        child: Text("No SMS messages found", style: TextStyle(color: Colors.grey)),
+        child: Text("No SMS conversations found", style: TextStyle(color: Colors.grey)),
       );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      itemCount: messages.length,
+      itemCount: threads.length,
       itemBuilder: (context, index) {
-        final sms = messages[index];
-        final isSelected = _selectedItem == sms;
+        final thread = threads[index];
+        final isSelected = _selectedItem == thread;
 
         return InkWell(
-          onTap: () => setState(() => _selectedItem = sms),
+          onTap: () => setState(() => _selectedItem = thread),
           borderRadius: BorderRadius.circular(10),
           child: Container(
             margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF00BFA5).withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: isSelected
-                  ? Border.all(color: const Color(0xFF00BFA5).withValues(alpha: 0.4))
-                  : null,
+              color: isSelected ? const Color(0xFF00BFA5).withValues(alpha: 0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected ? Border.all(color: const Color(0xFF00BFA5).withValues(alpha: 0.4)) : null,
             ),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                  child: const Icon(Icons.message, color: Color(0xFF8B5CF6), size: 14),
+                  radius: 18,
+                  backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                  child: Text(
+                    thread.contactName.isNotEmpty ? thread.contactName[0].toUpperCase() : '?',
+                    style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        sms.address,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              thread.contactName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatSmsTime(thread.latestTimestamp),
+                            style: const TextStyle(color: Colors.grey, fontSize: 10),
+                          ),
+                        ],
                       ),
+                      if (thread.contactName != thread.address)
+                        Text(
+                          thread.address,
+                          style: const TextStyle(color: Color(0xFF00BFA5), fontSize: 10),
+                        ),
+                      const SizedBox(height: 2),
                       Text(
-                        sms.body,
+                        thread.latestMessage,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Colors.white60, fontSize: 11),
@@ -634,7 +674,6 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Sleek Input Display Box
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
@@ -646,13 +685,9 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    _dialerController.text.isEmpty
-                        ? "Enter number"
-                        : _dialerController.text,
+                    _dialerController.text.isEmpty ? "Enter number" : _dialerController.text,
                     style: TextStyle(
-                      color: _dialerController.text.isEmpty
-                          ? Colors.grey
-                          : Colors.white,
+                      color: _dialerController.text.isEmpty ? Colors.grey : Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.5,
@@ -661,19 +696,16 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                 ),
                 if (_dialerController.text.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.backspace_outlined,
-                        color: Colors.grey, size: 18),
+                    icon: const Icon(Icons.backspace_outlined, color: Colors.grey, size: 18),
                     onPressed: () => setState(() {
-                      _dialerController.text = _dialerController.text.substring(
-                          0, _dialerController.text.length - 1);
+                      _dialerController.text =
+                          _dialerController.text.substring(0, _dialerController.text.length - 1);
                     }),
                   ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-
-          // Keypad Buttons Grid
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -714,21 +746,14 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Full-width vibrant Call Button
           ElevatedButton.icon(
             onPressed: () => _makeCall(_dialerController.text),
             icon: const Icon(Icons.phone, color: Colors.black, size: 20),
-            label: const Text("Call",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16)),
+            label: const Text("Call", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF10B981),
               minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],
@@ -751,13 +776,8 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(digit,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18)),
-            if (sub.isNotEmpty)
-              Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 8)),
+            Text(digit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            if (sub.isNotEmpty) Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 8)),
           ],
         ),
       ),
@@ -779,8 +799,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white10),
               ),
-              child: const Icon(Icons.phone_in_talk,
-                  color: Color(0xFF00BFA5), size: 36),
+              child: const Icon(Icons.phone_in_talk, color: Color(0xFF00BFA5), size: 36),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -803,43 +822,71 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
 
     String name = '';
     String number = '';
+    List<RealSmsMessage> conversationMessages = [];
 
-    if (_selectedItem is RealCallLogItem) {
-      final log = _selectedItem as RealCallLogItem;
-      name = log.name;
-      number = log.number;
+    if (_selectedItem is SmsThread) {
+      final thread = _selectedItem as SmsThread;
+      name = thread.contactName;
+      number = thread.address;
+      conversationMessages = thread.messages;
     } else if (_selectedItem is RealContactItem) {
       final contact = _selectedItem as RealContactItem;
       name = contact.name;
       number = contact.number;
-    } else if (_selectedItem is RealSmsMessage) {
-      final sms = _selectedItem as RealSmsMessage;
-      name = sms.address;
-      number = sms.address;
+
+      // Find matching thread for this contact
+      final norm = RealAdbSyncService.normalizeNumber(number);
+      final matchingThread = _smsThreads.firstWhere(
+        (t) => t.normalizedNumber == norm,
+        orElse: () => SmsThread(
+          address: number,
+          normalizedNumber: norm,
+          contactName: name,
+          latestMessage: '',
+          latestTimestamp: 0,
+          messages: [],
+        ),
+      );
+      conversationMessages = matchingThread.messages;
+    } else if (_selectedItem is RealCallLogItem) {
+      final log = _selectedItem as RealCallLogItem;
+      name = log.name;
+      number = log.number;
+
+      final norm = RealAdbSyncService.normalizeNumber(number);
+      final matchingThread = _smsThreads.firstWhere(
+        (t) => t.normalizedNumber == norm,
+        orElse: () => SmsThread(
+          address: number,
+          normalizedNumber: norm,
+          contactName: name,
+          latestMessage: '',
+          latestTimestamp: 0,
+          messages: [],
+        ),
+      );
+      conversationMessages = matchingThread.messages;
     }
 
-    final isSmsView = _selectedItem is RealSmsMessage || _activeSubTab == 3;
-    final threadMessages = _smsMessages
-        .where((m) => m.address == number || m.address == name)
-        .toList();
+    final isSmsMode = _selectedItem is SmsThread || _activeSubTab == 3;
 
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Selected Contact Header Card
+          // Header Card
           Row(
             children: [
               CircleAvatar(
-                radius: 28,
+                radius: 26,
                 backgroundColor: const Color(0xFF00BFA5).withValues(alpha: 0.25),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     color: Color(0xFF00BFA5),
                     fontWeight: FontWeight.bold,
-                    fontSize: 22,
+                    fontSize: 20,
                   ),
                 ),
               ),
@@ -870,26 +917,31 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
               ),
               Row(
                 children: [
-                  IconButton(
+                  ElevatedButton.icon(
                     onPressed: () => _makeCall(number),
-                    icon: const Icon(Icons.phone, color: Color(0xFF00BFA5)),
-                    tooltip: "Call Phone",
+                    icon: const Icon(Icons.phone, color: Colors.black, size: 16),
+                    label: const Text("Call", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00BFA5),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
           const SizedBox(height: 16),
           const Divider(height: 1, color: Colors.white10),
           const SizedBox(height: 12),
 
-          // Conversation / History Content
+          // Conversation Thread Body
           Expanded(
-            child: isSmsView
+            child: isSmsMode
                 ? Column(
                     children: [
                       Expanded(
-                        child: threadMessages.isEmpty
+                        child: conversationMessages.isEmpty
                             ? Center(
                                 child: Text(
                                   "No past messages with $name",
@@ -897,23 +949,64 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                                 ),
                               )
                             : ListView.builder(
-                                reverse: true,
-                                itemCount: threadMessages.length,
+                                controller: _chatScrollController,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                itemCount: conversationMessages.length,
                                 itemBuilder: (context, index) {
-                                  final m = threadMessages[index];
+                                  final m = conversationMessages[index];
+                                  final isMe = m.isSent;
+                                  final timeStr = _formatSmsTime(int.tryParse(m.date) ?? 0);
+
                                   return Align(
-                                    alignment: Alignment.centerLeft,
+                                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                                     child: Container(
+                                      constraints: const BoxConstraints(maxWidth: 320),
                                       margin: const EdgeInsets.symmetric(vertical: 4),
                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1E293B),
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: Colors.white10),
+                                        gradient: isMe
+                                            ? const LinearGradient(
+                                                colors: [Color(0xFF00BFA5), Color(0xFF0D9488)],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              )
+                                            : null,
+                                        color: isMe ? null : const Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(16),
+                                          topRight: const Radius.circular(16),
+                                          bottomLeft: Radius.circular(isMe ? 16 : 2),
+                                          bottomRight: Radius.circular(isMe ? 2 : 16),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.2),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          )
+                                        ],
                                       ),
-                                      child: Text(
-                                        m.body,
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            m.body,
+                                            style: TextStyle(
+                                              color: isMe ? Colors.white : Colors.white,
+                                              fontWeight: isMe ? FontWeight.w600 : FontWeight.normal,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            timeStr,
+                                            style: TextStyle(
+                                              color: isMe ? Colors.white70 : Colors.grey,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   );
@@ -928,8 +1021,9 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                             child: TextField(
                               controller: _smsComposerController,
                               style: const TextStyle(color: Colors.white, fontSize: 13),
+                              onSubmitted: (_) => _sendSms(number),
                               decoration: InputDecoration(
-                                hintText: "Type SMS to $name...",
+                                hintText: "Type SMS message to $name...",
                                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
                                 filled: true,
                                 fillColor: const Color(0xFF1E293B),
@@ -948,10 +1042,16 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                                   height: 24,
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00BFA5)),
                                 )
-                              : IconButton(
-                                  onPressed: () => _sendSms(number),
-                                  icon: const Icon(Icons.send_rounded, color: Color(0xFF00BFA5)),
-                                  tooltip: "Send SMS",
+                              : Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00BFA5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    onPressed: () => _sendSms(number),
+                                    icon: const Icon(Icons.send_rounded, color: Colors.black, size: 18),
+                                    tooltip: "Send SMS",
+                                  ),
                                 ),
                         ],
                       ),
@@ -1027,11 +1127,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
+                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                 Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 10)),
               ],
             ),

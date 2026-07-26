@@ -5,7 +5,7 @@
 5    android:versionName="1.0.0" >
 6
 7    <uses-sdk
-8        android:minSdkVersion="26"
+8        android:minSdkVersion="21"
 9        android:targetSdkVersion="34" />
 10
 11    <!-- System & Network Permissions -->
@@ -88,168 +88,194 @@
 43    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 43-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:32:5-75
 43-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:32:22-72
-44    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
-44-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:33:5-77
-44-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:33:22-74
-45
-46    <permission
-46-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-47        android:name="com.androiddex.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-47-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-48        android:protectionLevel="signature" />
-48-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
-49
-50    <uses-permission android:name="com.androiddex.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-50-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
-50-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-51
-52    <application
-52-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:35:5-79:19
-53        android:allowBackup="true"
-53-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:36:9-35
-54        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-54-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
-55        android:debuggable="true"
-56        android:extractNativeLibs="false"
-57        android:icon="@mipmap/ic_launcher"
-57-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:37:9-43
-58        android:label="Android Dex Companion"
-58-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:39:9-46
-59        android:roundIcon="@mipmap/ic_launcher_round"
-59-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:38:9-54
-60        android:supportsRtl="true"
-60-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-35
-61        android:theme="@style/Theme.Material3.DayNight.NoActionBar" >
-61-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:41:9-68
-62        <activity
-62-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:43:9-50:20
-63            android:name="com.androiddex.companion.MainActivity"
-63-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:44:13-41
-64            android:exported="true" >
-64-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:45:13-36
-65            <intent-filter>
-65-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:46:13-49:29
-66                <action android:name="android.intent.action.MAIN" />
-66-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:47:17-69
-66-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:47:25-66
-67
-68                <category android:name="android.intent.category.LAUNCHER" />
-68-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:48:17-77
-68-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:48:27-74
-69            </intent-filter>
-70        </activity>
-71
-72        <!-- Foreground Companion Telemetry Service -->
-73        <service
-73-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:53:9-57:63
-74            android:name="com.androiddex.companion.server.CompanionServerService"
-74-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:54:13-58
-75            android:enabled="true"
-75-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:55:13-35
-76            android:exported="false"
-76-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:56:13-37
-77            android:foregroundServiceType="connectedDevice" />
-77-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:57:13-60
-78
-79        <!-- Notification Listener Service -->
-80        <service
-80-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:60:9-68:19
-81            android:name="com.androiddex.companion.service.DexNotificationListenerService"
-81-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:61:13-67
-82            android:exported="true"
-82-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:62:13-36
-83            android:label="Android Dex Notification Bridge"
-83-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:63:13-60
-84            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
-84-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:64:13-87
-85            <intent-filter>
-85-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:65:13-67:29
-86                <action android:name="android.service.notification.NotificationListenerService" />
-86-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:66:17-99
-86-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:66:25-96
-87            </intent-filter>
-88        </service>
-89
-90        <!-- Telephony Call State Receiver -->
-91        <receiver
-91-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:71:9-77:20
-92            android:name="com.androiddex.companion.service.CallStateReceiver"
-92-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:72:13-54
-93            android:exported="true" >
-93-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:73:13-36
-94            <intent-filter>
-94-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:74:13-76:29
-95                <action android:name="android.intent.action.PHONE_STATE" />
-95-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:75:17-76
-95-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:75:25-73
-96            </intent-filter>
-97        </receiver>
-98
-99        <provider
-99-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
-100            android:name="androidx.startup.InitializationProvider"
-100-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
-101            android:authorities="com.androiddex.companion.androidx-startup"
-101-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
-102            android:exported="false" >
-102-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
-103            <meta-data
-103-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
-104                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-104-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
-105                android:value="androidx.startup" />
-105-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
-106            <meta-data
-106-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
-107                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-107-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
-108                android:value="androidx.startup" />
-108-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
-109            <meta-data
-109-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
-110                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-110-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
-111                android:value="androidx.startup" />
-111-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
-112        </provider>
-113
-114        <receiver
-114-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
-115            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-115-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
-116            android:directBootAware="false"
-116-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
-117            android:enabled="true"
-117-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
-118            android:exported="true"
-118-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
-119            android:permission="android.permission.DUMP" >
-119-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
-120            <intent-filter>
-120-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
-121                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-121-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
-121-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
-122            </intent-filter>
-123            <intent-filter>
-123-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
-124                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-124-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
-124-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
-125            </intent-filter>
-126            <intent-filter>
-126-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
-127                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-127-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
-127-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
-128            </intent-filter>
-129            <intent-filter>
-129-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
-130                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-130-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
-130-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
-131            </intent-filter>
-132        </receiver>
-133    </application>
-134
-135</manifest>
+44    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+44-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:33:5-81
+44-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:33:22-78
+45    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+45-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:34:5-77
+45-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:34:22-74
+46
+47    <permission
+47-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+48        android:name="com.androiddex.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+48-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+49        android:protectionLevel="signature" />
+49-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+50
+51    <uses-permission android:name="com.androiddex.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+51-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+51-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+52
+53    <application
+53-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:36:5-92:19
+54        android:allowBackup="true"
+54-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:37:9-35
+55        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+55-->[androidx.core:core:1.12.0] /home/charlesgameti/.gradle/caches/transforms-3/db3f6b8020888a7f113f2982cc217484/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+56        android:debuggable="true"
+57        android:extractNativeLibs="true"
+58        android:icon="@mipmap/ic_launcher"
+58-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:38:9-43
+59        android:label="Android Dex Companion"
+59-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-46
+60        android:roundIcon="@mipmap/ic_launcher_round"
+60-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:39:9-54
+61        android:supportsRtl="true"
+61-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:41:9-35
+62        android:theme="@style/Theme.Material3.DayNight.NoActionBar" >
+62-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:42:9-68
+63        <activity
+63-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:44:9-51:20
+64            android:name="com.androiddex.companion.MainActivity"
+64-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:45:13-41
+65            android:exported="true" >
+65-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:46:13-36
+66            <intent-filter>
+66-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:47:13-50:29
+67                <action android:name="android.intent.action.MAIN" />
+67-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:48:17-69
+67-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:48:25-66
+68
+69                <category android:name="android.intent.category.LAUNCHER" />
+69-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:49:17-77
+69-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:49:27-74
+70            </intent-filter>
+71        </activity>
+72
+73        <!-- Foreground Companion Telemetry Service -->
+74        <service
+74-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:54:9-58:63
+75            android:name="com.androiddex.companion.server.CompanionServerService"
+75-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:55:13-58
+76            android:enabled="true"
+76-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:56:13-35
+77            android:exported="false"
+77-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:57:13-37
+78            android:foregroundServiceType="connectedDevice" />
+78-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:58:13-60
+79
+80        <!-- Notification Listener Service -->
+81        <service
+81-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:61:9-69:19
+82            android:name="com.androiddex.companion.service.DexNotificationListenerService"
+82-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:62:13-67
+83            android:exported="true"
+83-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:63:13-36
+84            android:label="Android Dex Notification Bridge"
+84-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:64:13-60
+85            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+85-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:65:13-87
+86            <intent-filter>
+86-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:66:13-68:29
+87                <action android:name="android.service.notification.NotificationListenerService" />
+87-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:67:17-99
+87-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:67:25-96
+88            </intent-filter>
+89        </service>
+90
+91        <!-- Telephony Call State Receiver -->
+92        <receiver
+92-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:72:9-78:20
+93            android:name="com.androiddex.companion.service.CallStateReceiver"
+93-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:73:13-54
+94            android:exported="true" >
+94-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:74:13-36
+95            <intent-filter>
+95-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:75:13-77:29
+96                <action android:name="android.intent.action.PHONE_STATE" />
+96-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:76:17-76
+96-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:76:25-73
+97            </intent-filter>
+98        </receiver>
+99
+100        <!-- Device Boot Completed Receiver -->
+101        <receiver
+101-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:81:9-90:20
+102            android:name="com.androiddex.companion.receiver.BootCompletedReceiver"
+102-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:82:13-59
+103            android:enabled="true"
+103-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:83:13-35
+104            android:exported="true" >
+104-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:84:13-36
+105            <intent-filter>
+105-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:85:13-89:29
+106                <action android:name="android.intent.action.BOOT_COMPLETED" />
+106-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:86:17-79
+106-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:86:25-76
+107                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+107-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:87:17-86
+107-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:87:25-83
+108                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+108-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:88:17-82
+108-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:88:25-79
+109            </intent-filter>
+110        </receiver>
+111
+112        <provider
+112-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+113            android:name="androidx.startup.InitializationProvider"
+113-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
+114            android:authorities="com.androiddex.companion.androidx-startup"
+114-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
+115            android:exported="false" >
+115-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
+116            <meta-data
+116-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+117                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+117-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+118                android:value="androidx.startup" />
+118-->[androidx.emoji2:emoji2:1.2.0] /home/charlesgameti/.gradle/caches/transforms-3/c4dab8d1a445d82bbdf5c45e5c471e0a/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+119            <meta-data
+119-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+120                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+120-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+121                android:value="androidx.startup" />
+121-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/charlesgameti/.gradle/caches/transforms-3/46eea9eff17ad561ab19765e17354f70/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+122            <meta-data
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+123                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+124                android:value="androidx.startup" />
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+125        </provider>
+126
+127        <receiver
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+128            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+128-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+129            android:directBootAware="false"
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+130            android:enabled="true"
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+131            android:exported="true"
+131-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+132            android:permission="android.permission.DUMP" >
+132-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+133            <intent-filter>
+133-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+134                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+134-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+134-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+135            </intent-filter>
+136            <intent-filter>
+136-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+137                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+137-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+137-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+138            </intent-filter>
+139            <intent-filter>
+139-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+140                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+140-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+140-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+141            </intent-filter>
+142            <intent-filter>
+142-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+143                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+143-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+143-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/charlesgameti/.gradle/caches/transforms-3/4fe9f85f1db47f470d7a1d0e318b4ef2/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+144            </intent-filter>
+145        </receiver>
+146    </application>
+147
+148</manifest>

@@ -16,6 +16,7 @@ class MediaRoute(private val context: Context) {
         put("package_name", "")
         put("is_playing", false)
         put("position_ms", 0)
+        put("last_position_update_time", System.currentTimeMillis())
         put("duration_ms", 225000)
     }
 
@@ -29,5 +30,13 @@ class MediaRoute(private val context: Context) {
 
     fun getMediaStateJson(): String {
         return latestMediaJson.toString()
+    }
+
+    fun seekTo(positionMs: Long): Boolean {
+        return mediaListener.seekTo(positionMs)
+    }
+
+    fun sendTransportCommand(cmd: String): Boolean {
+        return mediaListener.sendTransportCommand(cmd)
     }
 }

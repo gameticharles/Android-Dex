@@ -3,47 +3,146 @@ package com.androiddex.companion.server
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.androiddex.companion.MainActivity
 import fi.iki.elonen.NanoHTTPD
 import org.json.JSONObject
 
 /**
- * Foreground Service running embedded HTTP Telemetry Server
+ * Foreground Service running embedded HTTP Telemetry Server with dynamic connection tracking.
  */
 class CompanionServerService : Service() {
 
+    companion object {
+        const val ACTION_STOP_SERVICE = "com.androiddex.companion.ACTION_STOP_SERVICE"
+        const val NOTIFICATION_ID = 1001
+        const val CHANNEL_ID = "dex_companion_channel"
+        private const val INACTIVITY_TIMEOUT_MS = 15000L // 15 seconds
+    }
+
     private var server: EmbeddedHttpServer? = null
+    private val handler = Handler(Looper.getMainLooper())
+    
+    @Volatile
+    private var isConnected = false
+    
+    @Volatile
+    private var lastRequestTimeMs = 0L
+    
+    @Volatile
+    private var lastClientIp = "127.0.0.1"
+
+    private val watchdogRunnable = object : Runnable {
+        override fun run() {
+            if (isConnected && (System.currentTimeMillis() - lastRequestTimeMs > INACTIVITY_TIMEOUT_MS)) {
+                isConnected = false
+                updateNotification()
+            }
+            handler.postDelayed(this, 5000L)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
-        startForegroundServiceNotification()
+        createNotificationChannel()
+        updateNotification()
         startEmbeddedServer()
+        handler.postDelayed(watchdogRunnable, 5000L)
     }
 
-    private fun startForegroundServiceNotification() {
-        val channelId = "dex_companion_channel"
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP_SERVICE) {
+            stopForeground(true)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        updateNotification()
+        return START_STICKY
+    }
+
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                channelId,
+                CHANNEL_ID,
                 "Android Dex Companion Server",
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                description = "Shows live connection status for Android Dex Companion"
+                setShowBadge(false)
+            }
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(channel)
         }
+    }
 
-        val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Android Dex Companion")
-            .setContentText("Streaming telemetry to Desktop shell...")
+    fun updateClientActivity(clientIp: String) {
+        lastRequestTimeMs = System.currentTimeMillis()
+        lastClientIp = clientIp
+        if (!isConnected) {
+            isConnected = true
+            updateNotification()
+        }
+    }
+
+    private fun updateNotification() {
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val stopIntent = Intent(this, CompanionServerService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val title: String
+        val text: String
+        if (isConnected) {
+            title = "Android Dex Companion • Connected"
+            text = "Streaming to Desktop ($lastClientIp) • Port 8080"
+        } else {
+            title = "Android Dex Companion • Waiting for Connection"
+            text = "Service active on port 8080 • Ready to pair"
+        }
+
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setContentIntent(openAppPendingIntent)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .addAction(
+                android.R.drawable.ic_menu_view,
+                "Open App",
+                openAppPendingIntent
+            )
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                if (isConnected) "Disconnect" else "Stop Service",
+                stopPendingIntent
+            )
             .build()
 
-        startForeground(1001, notification)
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun startEmbeddedServer() {
@@ -54,6 +153,7 @@ class CompanionServerService : Service() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(watchdogRunnable)
         server?.stop()
         super.onDestroy()
     }
@@ -71,6 +171,9 @@ class CompanionServerService : Service() {
         private val permissionsRoute = PermissionsRoute(context)
 
         override fun serve(session: IHTTPSession): Response {
+            val clientIp = session.remoteIpAddress ?: "127.0.0.1"
+            context.updateClientActivity(clientIp)
+
             val uri = session.uri
             val parms = session.parms
 
@@ -79,7 +182,7 @@ class CompanionServerService : Service() {
                     newFixedLengthResponse(
                         Response.Status.OK,
                         "application/json",
-                        JSONObject().put("status", "success").toString()
+                        JSONObject().put("status", "success").put("connected", true).toString()
                     )
                 }
                 uri == "/media" -> {
@@ -87,6 +190,29 @@ class CompanionServerService : Service() {
                         Response.Status.OK,
                         "application/json",
                         mediaRoute.getMediaStateJson()
+                    )
+                }
+                uri == "/media/seek" -> {
+                    val posMs = parms["position_ms"]?.toLongOrNull() ?: parms["position"]?.toLongOrNull() ?: 0L
+                    val ok = mediaRoute.seekTo(posMs)
+                    newFixedLengthResponse(
+                        Response.Status.OK,
+                        "application/json",
+                        JSONObject().put("status", if (ok) "success" else "failed").put("position_ms", posMs).toString()
+                    )
+                }
+                uri == "/media/control" -> {
+                    val cmd = parms["cmd"] ?: parms["command"] ?: ""
+                    val posMs = parms["position_ms"]?.toLongOrNull() ?: parms["position"]?.toLongOrNull()
+                    val ok = if (cmd.lowercase() == "seek" && posMs != null) {
+                        mediaRoute.seekTo(posMs)
+                    } else {
+                        mediaRoute.sendTransportCommand(cmd)
+                    }
+                    newFixedLengthResponse(
+                        Response.Status.OK,
+                        "application/json",
+                        JSONObject().put("status", if (ok) "success" else "failed").put("cmd", cmd).toString()
                     )
                 }
                 uri == "/contacts" -> {

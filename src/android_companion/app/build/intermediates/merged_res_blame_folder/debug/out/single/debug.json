@@ -1,23 +1,7 @@
 [
     {
-        "merged": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-merged_res-33:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-main-35:/mipmap-anydpi-v26/ic_launcher.xml"
-    },
-    {
-        "merged": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-merged_res-33:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-main-35:/drawable/ic_launcher_foreground.xml"
-    },
-    {
         "merged": "com.androiddex.companion.app-merged_res-33:/drawable_ic_launcher_monochrome.xml.flat",
         "source": "com.androiddex.companion.app-main-35:/drawable/ic_launcher_monochrome.xml"
-    },
-    {
-        "merged": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-merged_res-33:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-main-35:/mipmap-anydpi-v26/ic_launcher_round.xml"
-    },
-    {
-        "merged": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-merged_res-33:/drawable_ic_launcher_background.xml.flat",
-        "source": "/home/charlesgameti/.gradle/daemon/8.4/com.androiddex.companion.app-main-35:/drawable/ic_launcher_background.xml"
     },
     {
         "merged": "com.androiddex.companion.app-merged_res-33:/mipmap-anydpi-v26_ic_launcher.xml.flat",
@@ -26,5 +10,13 @@
     {
         "merged": "com.androiddex.companion.app-merged_res-33:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
         "source": "com.androiddex.companion.app-main-35:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.androiddex.companion.app-merged_res-33:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.androiddex.companion.app-main-35:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.androiddex.companion.app-merged_res-33:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.androiddex.companion.app-main-35:/drawable/ic_launcher_foreground.xml"
     }
 ]
