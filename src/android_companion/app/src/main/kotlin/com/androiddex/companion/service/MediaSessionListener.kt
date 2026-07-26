@@ -83,11 +83,31 @@ class MediaSessionListener(
             ?: description?.subtitle?.toString()
             ?: "Android Audio Engine"
 
-        val album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM)
-            ?: description?.description?.toString()
+        var rawAlbum = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION)
             ?: ""
 
-        val durationMs = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 225000L
+        var album = ""
+        if (rawAlbum.isNotEmpty() &&
+            !rawAlbum.lowercase().contains("www.") &&
+            !rawAlbum.lowercase().contains(".com") &&
+            !rawAlbum.lowercase().contains(".net") &&
+            !rawAlbum.lowercase().contains(".org") &&
+            rawAlbum != title) {
+            album = rawAlbum
+        }
+
+        var durationMs = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+        if (durationMs <= 0L) {
+            val extras = metadata?.description?.extras ?: playbackState?.extras
+            if (extras != null) {
+                durationMs = extras.getLong("android.media.metadata.DURATION", 0L)
+                if (durationMs <= 0L) durationMs = extras.getLong("duration", 0L)
+                if (durationMs <= 0L) durationMs = extras.getInt("duration", 0).toLong()
+                if (durationMs <= 0L) durationMs = extras.getLong("duration_ms", 0L)
+            }
+        }
+
         val positionMs = playbackState?.position ?: 0L
         val isPlaying = playbackState?.state == PlaybackState.STATE_PLAYING
 
@@ -146,7 +166,7 @@ class MediaSessionListener(
             put("package_name", "")
             put("is_playing", false)
             put("position_ms", 0)
-            put("duration_ms", 225000)
+            put("duration_ms", 0)
         }
         onMediaChanged(json)
     }

@@ -432,7 +432,7 @@ class RealAdbSyncService {
       int durationMs =
           (currentState?.durationMs != null && currentState!.durationMs > 0)
               ? currentState.durationMs
-              : 225000;
+              : 0;
       int positionMs = currentState?.positionMs ?? 0;
       String? artworkBase64 = currentState?.artworkBase64;
       String? artworkUrl = currentState?.artworkUrl;
@@ -463,7 +463,12 @@ class RealAdbSyncService {
             artist = parts[1].trim();
           }
           if (parts.length > 2 && parts[2].trim().isNotEmpty) {
-            album = parts[2].trim();
+            final possibleAlbum = parts[2].trim();
+            if (!possibleAlbum.toLowerCase().contains("www.") &&
+                !possibleAlbum.toLowerCase().contains(".com") &&
+                !possibleAlbum.toLowerCase().contains(".net")) {
+              album = possibleAlbum;
+            }
           }
         }
       }
