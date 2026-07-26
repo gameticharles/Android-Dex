@@ -84,25 +84,29 @@ class _AdbDeviceManagerAppState extends State<AdbDeviceManagerApp> {
       title: 'Android Dex Desktop',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: AnimatedCrossFade(
-        firstChild: BootloaderScreen(
-          deviceState: _deviceState,
-          onLaunchDesktop: () {
-            setState(() {
-              _isBootCompleted = true;
-            });
-          },
-        ),
-        secondChild: _isBootCompleted
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _isBootCompleted
             ? DexDesktopShell(
+                key: const ValueKey('dex_desktop_shell'),
                 deviceState: _deviceState,
                 onStartBoot: _runBootProtocol,
               )
-            : const SizedBox.shrink(),
-        crossFadeState: _isBootCompleted
-            ? CrossFadeState.showSecond
-            : CrossFadeState.showFirst,
-        duration: const Duration(milliseconds: 500),
+            : BootloaderScreen(
+                key: const ValueKey('bootloader_screen'),
+                deviceState: _deviceState,
+                onLaunchDesktop: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _isBootCompleted = true;
+                      });
+                    }
+                  });
+                },
+              ),
       ),
     );
   }

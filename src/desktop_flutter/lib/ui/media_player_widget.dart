@@ -62,12 +62,16 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
       if (_playbackTicker == null || !_playbackTicker!.isActive) {
         _playbackTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
           if (mounted) {
-            final curMedia = widget.deviceState?.mediaState.value ?? const RealMediaState();
-            if (curMedia.isPlaying && !_isDraggingSlider) {
-              setState(() {
-                _currentPosMs = curMedia.currentLivePositionMs;
-              });
-            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                final curMedia = widget.deviceState?.mediaState.value ?? const RealMediaState();
+                if (curMedia.isPlaying && !_isDraggingSlider) {
+                  setState(() {
+                    _currentPosMs = curMedia.currentLivePositionMs;
+                  });
+                }
+              }
+            });
           }
         });
       }
@@ -209,7 +213,11 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
               if (!_isDraggingSlider) {
                 _currentPosMs = media.currentLivePositionMs;
               }
-              _manageTicker(media.isPlaying, media.durationMs);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _manageTicker(media.isPlaying, media.durationMs);
+                }
+              });
               return _buildFlyoutBody(media);
             },
           )
