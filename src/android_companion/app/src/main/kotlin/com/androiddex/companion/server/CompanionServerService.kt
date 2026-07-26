@@ -122,11 +122,11 @@ class CompanionServerService : Service() {
         val title: String
         val text: String
         if (isConnected) {
-            title = "Android Dex Companion • Connected"
+            title = "Android Dex Companion"
             text = "Connected to $activeComputerName ($lastClientIp) • Streaming"
         } else {
-            title = "Android Dex Companion • Waiting for Connection"
-            text = "Service active on port 8080 • Ready to pair"
+            title = "Android Dex Companion"
+            text = "Service active on port 8080 • Ready to stream"
         }
 
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)

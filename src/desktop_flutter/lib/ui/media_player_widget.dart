@@ -94,13 +94,18 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
     if (media.artworkBase64 != null && media.artworkBase64!.isNotEmpty) {
       try {
         final bytes = base64Decode(media.artworkBase64!);
-        baseArt = Image.memory(bytes, fit: BoxFit.cover);
+        baseArt = Image.memory(
+          bytes,
+          key: ValueKey(media.artworkBase64!),
+          fit: BoxFit.cover,
+        );
       } catch (_) {
         baseArt = _buildFallbackArtwork(media.packageName);
       }
     } else if (media.artworkUrl != null && media.artworkUrl!.isNotEmpty) {
       baseArt = Image.network(
         media.artworkUrl!,
+        key: ValueKey(media.artworkUrl!),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildFallbackArtwork(media.packageName),
       );
@@ -124,7 +129,11 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
               border: Border.all(color: Colors.white30, width: 1.5),
             ),
             child: ClipOval(
-              child: Image.memory(iconBytes, fit: BoxFit.cover),
+              child: Image.memory(
+                iconBytes,
+                key: ValueKey(media.appIconBase64!),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         );

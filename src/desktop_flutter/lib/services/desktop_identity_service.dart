@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-/**
- * Manages local DEX Desktop Identity (Client ID and Computer Hostname).
- */
+/// Manages local DEX Desktop Identity (Client ID and Computer Hostname).
 class DesktopIdentityService {
   static String? _cachedId;
   static String? _cachedHostname;
@@ -42,7 +40,8 @@ class DesktopIdentityService {
         _cachedHostname = name;
         return name;
       }
-      final envName = Platform.environment['HOSTNAME'] ?? Platform.environment['COMPUTERNAME'];
+      final envName = Platform.environment['HOSTNAME'] ??
+          Platform.environment['COMPUTERNAME'];
       if (envName != null && envName.isNotEmpty) {
         _cachedHostname = envName;
         return envName;

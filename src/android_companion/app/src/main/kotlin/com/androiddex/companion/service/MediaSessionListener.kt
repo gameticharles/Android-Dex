@@ -29,6 +29,8 @@ class MediaSessionListener(
         context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
 
     private var activeController: MediaController? = null
+    private var cachedArtworkKey: String? = null
+    private var cachedArtworkBase64: String? = null
 
     private val controllerCallback = object : MediaController.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadata?) {
@@ -150,9 +152,19 @@ class MediaSessionListener(
             }
         }
 
-        val positionMs = playbackState?.position ?: 0L
-        val lastPositionUpdateTime = playbackState?.lastPositionUpdateTime ?: System.currentTimeMillis()
         val isPlaying = playbackState?.state == PlaybackState.STATE_PLAYING
+        var positionMs = playbackState?.position ?: 0L
+        if (isPlaying && playbackState != null && playbackState.lastPositionUpdateTime > 0L) {
+            val elapsedMs = android.os.SystemClock.elapsedRealtime() - playbackState.lastPositionUpdateTime
+            if (elapsedMs > 0L) {
+                val speed = if (playbackState.playbackSpeed > 0f) playbackState.playbackSpeed else 1.0f
+                positionMs += (elapsedMs * speed).toLong()
+            }
+        }
+        if (durationMs > 0L && positionMs > durationMs) {
+            positionMs = durationMs
+        }
+        val lastPositionUpdateTime = System.currentTimeMillis()
         val packageName = controller.packageName ?: ""
 
         var artworkBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
@@ -174,7 +186,15 @@ class MediaSessionListener(
             } catch (_: Exception) {}
         }
 
-        val artworkBase64 = artworkBitmap?.let { encodeBitmapToSafeBase64(it, maxDimension = 300) }
+        val currentTrackKey = "$title|$artist|$album|$artUriStr"
+        val artworkBase64 = if (currentTrackKey == cachedArtworkKey && cachedArtworkBase64 != null) {
+            cachedArtworkBase64
+        } else {
+            val b64 = artworkBitmap?.let { encodeBitmapToSafeBase64(it, maxDimension = 300) }
+            cachedArtworkKey = currentTrackKey
+            cachedArtworkBase64 = b64
+            b64
+        }
         val appIconBase64 = getAppIconBase64(packageName)
 
         val json = JSONObject().apply {
