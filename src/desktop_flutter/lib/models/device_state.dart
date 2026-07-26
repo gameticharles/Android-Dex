@@ -12,6 +12,7 @@ class DeviceState {
   final ValueNotifier<bool> isTorchEnabled = ValueNotifier<bool>(false);
   final ValueNotifier<String> deviceName = ValueNotifier<String>('Unknown Device');
   final ValueNotifier<String> deviceIp = ValueNotifier<String>('127.0.0.1');
+  final ValueNotifier<String> connectionRoute = ValueNotifier<String>('USB ADB');
   final ValueNotifier<bool> isAdbConnected = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isAppConnected = ValueNotifier<bool>(false);
   final ValueNotifier<List<RealNotificationItem>> notifications =

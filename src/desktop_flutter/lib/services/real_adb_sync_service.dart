@@ -108,6 +108,42 @@ class RealAdbSyncService {
     return messages;
   }
 
+  /// Send real SMS to recipient via Companion HTTP or ADB fallback
+  static Future<bool> sendSms(String recipient, String message) async {
+    if (recipient.trim().isEmpty || message.trim().isEmpty) return false;
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 600);
+      final uri = Uri.parse('http://127.0.0.1:8080/sms/send').replace(
+          queryParameters: {'recipient': recipient.trim(), 'message': message.trim()});
+      final req = await client.getUrl(uri);
+      final res = await req.close();
+      client.close();
+      if (res.statusCode == 200) {
+        return true;
+      }
+    } catch (_) {}
+
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      await Process.run(adbPath, [
+        'shell',
+        'am',
+        'start',
+        '-a',
+        'android.intent.action.SENDTO',
+        '-d',
+        'sms:${recipient.trim()}',
+        '--es',
+        'sms_body',
+        message.trim(),
+      ]);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Fetch real live Contacts from Android phone (2,300+ contacts)
   static Future<List<RealContactItem>> fetchRealContacts() async {
     final adbPath = await AdbDeviceScanner.getAdbPath();

@@ -22,13 +22,16 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
   late int _activeSubTab;
   List<RealCallLogItem> _callLogs = [];
   List<RealContactItem> _contacts = [];
+  List<RealSmsMessage> _smsMessages = [];
   bool _isLoading = true;
+  bool _isSendingSms = false;
 
   // Selected Item for Right Detail View
   Object? _selectedItem;
 
   final TextEditingController _dialerController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _smsComposerController = TextEditingController();
 
   @override
   void initState() {
@@ -41,13 +44,41 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     setState(() => _isLoading = true);
     final contacts = await RealAdbSyncService.fetchRealContacts();
     final logs = await RealAdbSyncService.fetchRealCallLogs();
+    final sms = await RealAdbSyncService.fetchRealSms();
 
     if (mounted) {
       setState(() {
         _contacts = contacts;
         _callLogs = logs;
+        _smsMessages = sms;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _sendSms(String number) async {
+    final text = _smsComposerController.text.trim();
+    if (number.trim().isEmpty || text.isEmpty) return;
+
+    setState(() => _isSendingSms = true);
+    final ok = await RealAdbSyncService.sendSms(number, text);
+    if (mounted) {
+      setState(() {
+        _isSendingSms = false;
+        if (ok) {
+          _smsMessages.insert(
+            0,
+            RealSmsMessage(address: number, body: text, date: DateTime.now().millisecondsSinceEpoch.toString()),
+          );
+          _smsComposerController.clear();
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok ? "SMS sent to $number" : "Failed to send SMS"),
+          backgroundColor: ok ? const Color(0xFF00BFA5) : Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -183,7 +214,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                         ),
                       ),
 
-                      // Sub-tabs: ALL | MISSED | CONTACTS | DIAL
+                      // Sub-tabs: ALL | MISSED | CONTACTS | SMS | DIAL
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         padding: const EdgeInsets.all(4),
@@ -196,7 +227,8 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                             _buildSubTab(0, "ALL"),
                             _buildSubTab(1, "MISSED"),
                             _buildSubTab(2, "CONTACTS"),
-                            _buildSubTab(3, "DIAL"),
+                            _buildSubTab(3, "SMS"),
+                            _buildSubTab(4, "DIAL"),
                           ],
                         ),
                       ),
@@ -220,7 +252,10 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                                   // 2: CONTACTS
                                   _buildContactsList(filteredContacts),
 
-                                  // 3: DIALER KEYPAD
+                                  // 3: SMS THREADS
+                                  _buildSmsList(_smsMessages),
+
+                                  // 4: DIALER KEYPAD
                                   _buildKeypadPane(),
                                 ],
                               ),
@@ -525,7 +560,75 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
     );
   }
 
-  // LEFT PANE: KEYPAD DIALER (Matching original screenshot styling!)
+  // LEFT PANE: SMS LIST
+  Widget _buildSmsList(List<RealSmsMessage> messages) {
+    if (messages.isEmpty) {
+      return const Center(
+        child: Text("No SMS messages found", style: TextStyle(color: Colors.grey)),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final sms = messages[index];
+        final isSelected = _selectedItem == sms;
+
+        return InkWell(
+          onTap: () => setState(() => _selectedItem = sms),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFF00BFA5).withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected
+                  ? Border.all(color: const Color(0xFF00BFA5).withValues(alpha: 0.4))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                  child: const Icon(Icons.message, color: Color(0xFF8B5CF6), size: 14),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sms.address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        sms.body,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white60, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // LEFT PANE: KEYPAD DIALER
   Widget _buildKeypadPane() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -570,7 +673,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
           ),
           const SizedBox(height: 16),
 
-          // Keypad Buttons Grid (Wide rounded dark key cards matching original screenshot)
+          // Keypad Buttons Grid
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -681,7 +784,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             ),
             const SizedBox(height: 16),
             const Text(
-              "Phone & Calls",
+              "Phone, Contacts & SMS",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -690,7 +793,7 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
             ),
             const SizedBox(height: 6),
             const Text(
-              "Select a log or use the Dial tab to make a call",
+              "Select a contact, call log, or SMS thread to interact",
               style: TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ],
@@ -709,10 +812,19 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
       final contact = _selectedItem as RealContactItem;
       name = contact.name;
       number = contact.number;
+    } else if (_selectedItem is RealSmsMessage) {
+      final sms = _selectedItem as RealSmsMessage;
+      name = sms.address;
+      number = sms.address;
     }
 
+    final isSmsView = _selectedItem is RealSmsMessage || _activeSubTab == 3;
+    final threadMessages = _smsMessages
+        .where((m) => m.address == number || m.address == name)
+        .toList();
+
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -720,18 +832,18 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
           Row(
             children: [
               CircleAvatar(
-                radius: 36,
+                radius: 28,
                 backgroundColor: const Color(0xFF00BFA5).withValues(alpha: 0.25),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     color: Color(0xFF00BFA5),
                     fontWeight: FontWeight.bold,
-                    fontSize: 26,
+                    fontSize: 22,
                   ),
                 ),
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,96 +853,153 @@ class _UnifiedPhoneDialogState extends State<UnifiedPhoneDialog> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 22,
+                        fontSize: 18,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       number,
                       style: const TextStyle(
                         color: Color(0xFF00BFA5),
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Direct Action Button
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _makeCall(number),
-                  icon: const Icon(Icons.phone, color: Colors.black, size: 18),
-                  label: const Text("Call Phone",
-                      style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00BFA5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-
-          const Divider(height: 1, color: Colors.white10),
-          const SizedBox(height: 20),
-
-          // Call History Timeline Details
-          const Text(
-            "CALL HISTORY TIMELINE",
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: ListView(
+              Row(
                 children: [
-                  _buildTimelineTile(
-                    icon: Icons.call_made,
-                    color: Colors.blueAccent,
-                    title: "Outgoing call",
-                    sub: "Connected • 23s",
-                    time: "14:03 Today",
-                  ),
-                  _buildTimelineTile(
-                    icon: Icons.call_received,
-                    color: Colors.greenAccent,
-                    title: "Incoming call",
-                    sub: "Connected • 58s",
-                    time: "14:15 Today",
-                  ),
-                  _buildTimelineTile(
-                    icon: Icons.call_missed,
-                    color: Colors.redAccent,
-                    title: "Missed call",
-                    sub: "Not connected",
-                    time: "15:25 Today",
+                  IconButton(
+                    onPressed: () => _makeCall(number),
+                    icon: const Icon(Icons.phone, color: Color(0xFF00BFA5)),
+                    tooltip: "Call Phone",
                   ),
                 ],
-              ),
-            ),
+              )
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Colors.white10),
+          const SizedBox(height: 12),
+
+          // Conversation / History Content
+          Expanded(
+            child: isSmsView
+                ? Column(
+                    children: [
+                      Expanded(
+                        child: threadMessages.isEmpty
+                            ? Center(
+                                child: Text(
+                                  "No past messages with $name",
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              )
+                            : ListView.builder(
+                                reverse: true,
+                                itemCount: threadMessages.length,
+                                itemBuilder: (context, index) {
+                                  final m = threadMessages[index];
+                                  return Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(vertical: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1E293B),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: Colors.white10),
+                                      ),
+                                      child: Text(
+                                        m.body,
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Text Composer Input Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _smsComposerController,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              decoration: InputDecoration(
+                                hintText: "Type SMS to $name...",
+                                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                                filled: true,
+                                fillColor: const Color(0xFF1E293B),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _isSendingSms
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00BFA5)),
+                                )
+                              : IconButton(
+                                  onPressed: () => _sendSms(number),
+                                  icon: const Icon(Icons.send_rounded, color: Color(0xFF00BFA5)),
+                                  tooltip: "Send SMS",
+                                ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "CALL HISTORY TIMELINE",
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B).withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: ListView(
+                            children: [
+                              _buildTimelineTile(
+                                icon: Icons.call_made,
+                                color: Colors.blueAccent,
+                                title: "Outgoing call",
+                                sub: "Connected • 23s",
+                                time: "14:03 Today",
+                              ),
+                              _buildTimelineTile(
+                                icon: Icons.call_received,
+                                color: Colors.greenAccent,
+                                title: "Incoming call",
+                                sub: "Connected • 58s",
+                                time: "14:15 Today",
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),

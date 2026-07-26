@@ -551,6 +551,13 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                                   _showPhone(context, initialSubTab: 2),
                             ),
                             _buildDesktopShortcut(
+                              icon: Icons.message_rounded,
+                              label: "SMS Messages",
+                              color: const Color(0xFF00BFA5),
+                              onTap: () =>
+                                  _showPhone(context, initialSubTab: 3),
+                            ),
+                            _buildDesktopShortcut(
                               icon: Icons.grid_view_rounded,
                               label: "Apps Drawer",
                               color: const Color(0xFF00BFA5),
@@ -562,12 +569,14 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                     ),
                   ),
 
-                  // Right Side Widgets (Clock + Media Player)
+                  // Right Side Widgets (Clock + Phone Health + Media Player)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _buildClockWidget(timeStr, dateStr),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      _buildPhoneHealthWidget(),
+                      const SizedBox(height: 16),
                       _buildFloatingMediaPlayer(),
                     ],
                   ),
@@ -1561,6 +1570,95 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhoneHealthWidget() {
+    return ValueListenableBuilder<int>(
+      valueListenable: widget.deviceState.batteryPercentage,
+      builder: (context, batteryPct, _) {
+        return Container(
+          width: 320,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 20,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.phonelink_setup, color: Color(0xFF00BFA5), size: 18),
+                      const SizedBox(width: 8),
+                      ValueListenableBuilder<String>(
+                        valueListenable: widget.deviceState.deviceName,
+                        builder: (_, name, __) => Text(
+                          name,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: widget.deviceState.connectionRoute,
+                    builder: (_, route, __) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00BFA5).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        route,
+                        style: const TextStyle(color: Color(0xFF00BFA5), fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Phone Battery", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            Text("$batteryPct%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (batteryPct / 100.0).clamp(0.0, 1.0),
+                            backgroundColor: Colors.white10,
+                            color: batteryPct > 20 ? const Color(0xFF10B981) : Colors.redAccent,
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
