@@ -100,6 +100,7 @@ class _SmartAppIconWidgetState extends State<SmartAppIconWidget> {
       final Widget imageWidget = isLocalFile
           ? Image.file(
               File(_iconUrl!),
+              key: ValueKey(_iconUrl!),
               width: widget.size,
               height: widget.size,
               fit: BoxFit.cover,
@@ -107,6 +108,7 @@ class _SmartAppIconWidgetState extends State<SmartAppIconWidget> {
             )
           : Image.network(
               _iconUrl!,
+              key: ValueKey(_iconUrl!),
               width: widget.size,
               height: widget.size,
               fit: BoxFit.cover,
