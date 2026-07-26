@@ -23,6 +23,7 @@ class AppDrawerDialog extends StatefulWidget {
   final DeviceState? deviceState;
   final VoidCallback? onStartBoot;
   final void Function(String packageName, String appName)? onLaunchAppWindow;
+  final VoidCallback? onOpenSettingsWindow;
 
   const AppDrawerDialog({
     super.key,
@@ -30,6 +31,7 @@ class AppDrawerDialog extends StatefulWidget {
     this.deviceState,
     this.onStartBoot,
     this.onLaunchAppWindow,
+    this.onOpenSettingsWindow,
   });
 
   @override
@@ -91,7 +93,10 @@ class _AppDrawerDialogState extends State<AppDrawerDialog> {
         title: "Settings",
         icon: Icons.settings_rounded,
         color: const Color(0xFF64748B),
-        onTap: () {},
+        onTap: () {
+          Navigator.of(context).pop();
+          widget.onOpenSettingsWindow?.call();
+        },
       ),
       SystemAppItem(
         title: "Browser",

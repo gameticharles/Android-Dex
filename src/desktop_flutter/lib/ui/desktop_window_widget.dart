@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 typedef WindowResizeCallback = void Function(
@@ -87,8 +88,10 @@ class DesktopWindowWidget extends StatelessWidget {
           child: ClipRRect(
             borderRadius:
                 isMaximized ? BorderRadius.zero : BorderRadius.circular(16),
-            child: Stack(
-              children: [
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Stack(
+                children: [
                 Column(
                   children: [
                     // Desktop Window Title Bar (Drag Handle & Controls with Move Cursor)
@@ -347,6 +350,7 @@ class DesktopWindowWidget extends StatelessWidget {
                 ],
               ],
             ),
+          ),
           ),
         ),
       ),

@@ -13,6 +13,7 @@ class QuickSettingsPopover extends StatefulWidget {
   final VoidCallback? onOpenDeviceHealth;
   final VoidCallback? onOpenWirelessAdb;
   final VoidCallback? onShowSystemInfo;
+  final VoidCallback? onOpenFullSettings;
 
   const QuickSettingsPopover({
     super.key,
@@ -25,6 +26,7 @@ class QuickSettingsPopover extends StatefulWidget {
     this.onOpenDeviceHealth,
     this.onOpenWirelessAdb,
     this.onShowSystemInfo,
+    this.onOpenFullSettings,
   });
 
   @override
@@ -168,6 +170,16 @@ class _QuickSettingsPopoverState extends State<QuickSettingsPopover> {
                           color: Color(0xFF00BFA5),
                           fontSize: 10,
                           fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.settings_suggest_rounded,
+                          color: Colors.white70, size: 18),
+                      tooltip: "Dex Settings Window",
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 26, minHeight: 26),
+                      onPressed: widget.onOpenFullSettings,
                     ),
                   ],
                 ),
@@ -434,11 +446,13 @@ class _QuickSettingsPopoverState extends State<QuickSettingsPopover> {
                     },
                   ),
                   _buildToggleItem(
-                    icon: Icons.phonelink_setup,
-                    label: "System",
-                    tooltip: "System Details",
+                    icon: Icons.settings_suggest_rounded,
+                    label: "Settings",
+                    tooltip: "Dex Settings Window",
                     isActive: false,
-                    onTap: widget.onShowSystemInfo ?? () {},
+                    onTap: widget.onOpenFullSettings ??
+                        widget.onShowSystemInfo ??
+                        () {},
                   ),
                 ]),
               ],

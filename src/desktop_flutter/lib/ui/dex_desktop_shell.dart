@@ -25,6 +25,8 @@ import 'smart_taskbar_popover_button.dart';
 import 'sms_dialog.dart';
 import 'unified_phone_dialog.dart';
 import 'wireless_adb_dialog.dart';
+import 'dex_settings_dialog.dart';
+import '../services/dex_settings_service.dart';
 import '../services/adb_device_scanner.dart';
 
 import 'desktop_window_widget.dart';
@@ -435,7 +437,23 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
         deviceState: widget.deviceState,
         onStartBoot: widget.onStartBoot,
         onLaunchAppWindow: (pkg, name) => _launchAppMirrorWindow(pkg, name),
+        onOpenSettingsWindow: () => _showDexSettings(context),
       ),
+    );
+  }
+
+  void _showDexSettings(BuildContext context) {
+    openDesktopWindow(
+      id: 'settings',
+      title: 'Dex Settings',
+      icon: Icons.settings_suggest_rounded,
+      themeColor: const Color(0xFF6366F1),
+      content: DexSettingsDialog(
+        isWindow: true,
+        deviceState: widget.deviceState,
+        onClose: () => _closeWindow('settings'),
+      ),
+      defaultSize: const Size(960, 640),
     );
   }
 
@@ -481,20 +499,38 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Wallpaper Background
+          // 1. Wallpaper Background & Darkness Overlay (Reactive with DexSettingsService)
           Positioned.fill(
-            child: Image.asset(
-              'assets/home_page/bg_set_test_1.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
+            child: ValueListenableBuilder<DexSettingsConfig>(
+              valueListenable: DexSettingsService.notifier,
+              builder: (_, cfg, __) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      cfg.wallpaperUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/home_page/bg_set_test_1.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (cfg.darknessOverlay > 0)
+                      Container(
+                        color: Colors.black.withValues(alpha: cfg.darknessOverlay),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
 
@@ -1096,6 +1132,10 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                               color: Colors.white70, size: 18),
                           expandedChild: QuickSettingsPopover(
                             deviceState: widget.deviceState,
+                            onOpenFullSettings: () {
+                              setState(() => _activePopover = TaskbarPopoverType.none);
+                              _showDexSettings(context);
+                            },
                             onLockDex: () {
                               setState(() {
                                 _activePopover = TaskbarPopoverType.none;

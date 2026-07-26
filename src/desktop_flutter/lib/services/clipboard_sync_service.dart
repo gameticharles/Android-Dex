@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'adb_device_scanner.dart';
+import 'dex_settings_service.dart';
 
 /// Bi-directional Desktop <-> Android Phone Clipboard Sync Service
 class ClipboardSyncService {
@@ -25,19 +26,31 @@ class ClipboardSyncService {
 
   /// Perform single bi-directional clipboard sync pass
   static Future<void> syncClipboard() async {
-    try {
-      // 1. Check Desktop Clipboard
-      final desktopData = await Clipboard.getData(Clipboard.kTextPlain);
-      final desktopText = desktopData?.text?.trim() ?? '';
+    final cfg = DexSettingsService.notifier.value;
+    if (!cfg.syncClipboard) return;
 
-      if (desktopText.isNotEmpty && desktopText != _lastDesktopClipboard && desktopText != _lastPhoneClipboard) {
-        _lastDesktopClipboard = desktopText;
-        // Push desktop text to phone clipboard via ADB shell input / clip command
-        await _pushTextToPhone(desktopText);
-      } else {
-        // 2. Poll Phone Clipboard
+    try {
+      // 1. Check Desktop Clipboard (Linux -> Android)
+      if (cfg.linuxToAndroid) {
+        final desktopData = await Clipboard.getData(Clipboard.kTextPlain);
+        final desktopText = desktopData?.text?.trim() ?? '';
+
+        if (desktopText.isNotEmpty &&
+            desktopText != _lastDesktopClipboard &&
+            desktopText != _lastPhoneClipboard) {
+          _lastDesktopClipboard = desktopText;
+          // Push desktop text to phone clipboard via ADB shell input / clip command
+          await _pushTextToPhone(desktopText);
+          return;
+        }
+      }
+
+      // 2. Poll Phone Clipboard (Android -> Linux)
+      if (cfg.androidToLinux) {
         final phoneText = await _fetchPhoneClipboard();
-        if (phoneText.isNotEmpty && phoneText != _lastPhoneClipboard && phoneText != _lastDesktopClipboard) {
+        if (phoneText.isNotEmpty &&
+            phoneText != _lastPhoneClipboard &&
+            phoneText != _lastDesktopClipboard) {
           _lastPhoneClipboard = phoneText;
           await Clipboard.setData(ClipboardData(text: phoneText));
         }

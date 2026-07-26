@@ -8,8 +8,11 @@ import 'services/shelf_server.dart';
 import 'ui/bootloader_screen.dart';
 import 'ui/dex_desktop_shell.dart';
 
+import 'services/dex_settings_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DexSettingsService.init();
   try {
     await windowManager.ensureInitialized();
   } catch (e) {
