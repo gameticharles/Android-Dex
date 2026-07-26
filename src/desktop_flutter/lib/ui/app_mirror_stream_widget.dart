@@ -141,51 +141,92 @@ class _AppMirrorStreamWidgetState extends State<AppMirrorStreamWidget> {
                       ],
                     )
                   : _hasStarted
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00BFA5)
-                                    .withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: const Color(0xFF00BFA5)
-                                        .withValues(alpha: 0.4)),
+                      ? LayoutBuilder(
+                          builder: (context, constraints) {
+                            return GestureDetector(
+                              onTapDown: (details) {
+                                final double dx = (details.localPosition.dx /
+                                        constraints.maxWidth)
+                                    .clamp(0.0, 1.0) *
+                                    1080;
+                                final double dy = (details.localPosition.dy /
+                                        constraints.maxHeight)
+                                    .clamp(0.0, 1.0) *
+                                    2340;
+                                AppLauncherService.sendTouchTap(
+                                    dx.toInt(), dy.toInt());
+                              },
+                              onPanEnd: (details) {
+                                final double startX = 540;
+                                final double startY = 1170;
+                                final double endY = (startY -
+                                        (details.velocity.pixelsPerSecond.dy *
+                                            0.2))
+                                    .clamp(100.0, 2200.0);
+                                AppLauncherService.sendTouchSwipe(
+                                    startX.toInt(),
+                                    startY.toInt(),
+                                    startX.toInt(),
+                                    endY.toInt(),
+                                    250);
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.transparent,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00BFA5)
+                                            .withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: const Color(0xFF00BFA5)
+                                                .withValues(alpha: 0.4)),
+                                      ),
+                                      child: const Icon(
+                                          Icons.screen_share_rounded,
+                                          size: 48,
+                                          color: Color(0xFF00BFA5)),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "${widget.title} is Active on Desktop",
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      "Interactive touch & drag controls enabled. Click/drag anywhere to interact.",
+                                      style: TextStyle(
+                                          color: Colors.white54, fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(
+                                            color: Color(0xFF00BFA5)),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
+                                      ),
+                                      icon: const Icon(Icons.refresh,
+                                          color: Color(0xFF00BFA5), size: 16),
+                                      label: const Text("Focus / Re-stream App",
+                                          style: TextStyle(
+                                              color: Color(0xFF00BFA5))),
+                                      onPressed: _startAppStream,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: const Icon(Icons.screen_share_rounded,
-                                  size: 48, color: Color(0xFF00BFA5)),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              "${widget.title} is Active on Desktop",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              "Interactive window is running with touch & keyboard controls.",
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 12),
-                            ),
-                            const SizedBox(height: 20),
-                            OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                side:
-                                    const BorderSide(color: Color(0xFF00BFA5)),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                              ),
-                              icon: const Icon(Icons.refresh,
-                                  color: Color(0xFF00BFA5), size: 16),
-                              label: const Text("Focus / Re-stream App",
-                                  style: TextStyle(color: Color(0xFF00BFA5))),
-                              onPressed: _startAppStream,
-                            ),
-                          ],
+                            );
+                          },
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,

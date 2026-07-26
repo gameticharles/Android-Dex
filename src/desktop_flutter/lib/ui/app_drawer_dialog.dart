@@ -22,12 +22,14 @@ class AppDrawerDialog extends StatefulWidget {
   final bool isWindow;
   final DeviceState? deviceState;
   final VoidCallback? onStartBoot;
+  final void Function(String packageName, String appName)? onLaunchAppWindow;
 
   const AppDrawerDialog({
     super.key,
     this.isWindow = false,
     this.deviceState,
     this.onStartBoot,
+    this.onLaunchAppWindow,
   });
 
   @override
@@ -342,13 +344,10 @@ class _AppDrawerDialogState extends State<AppDrawerDialog> {
                                     return;
                                   }
                                   AppLauncherService.launchApp(app.packageName);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          "Launching ${app.label} on connected device..."),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
+                                  if (widget.onLaunchAppWindow != null) {
+                                    widget.onLaunchAppWindow!(
+                                        app.packageName, app.label);
+                                  }
                                   Navigator.pop(context);
                                 },
                               );

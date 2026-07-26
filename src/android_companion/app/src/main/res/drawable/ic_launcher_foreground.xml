@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Monitor / Tablet Frame -->
+    <path
+        android:fillColor="#00BFA5"
+        android:pathData="M28,30 h52 a4,4 0 0 1 4,4 v32 a4,4 0 0 1 -4,4 h-52 a4,4 0 0 1 -4,-4 v-32 a4,4 0 0 1 4,-4 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M32,34 h44 a2,2 0 0 1 2,2 v24 a2,2 0 0 1 -2,2 h-44 a2,2 0 0 1 -2,-2 v-24 a2,2 0 0 1 2,-2 Z" />
+    <!-- Stand Base -->
+    <path
+        android:fillColor="#00BFA5"
+        android:pathData="M48,70 h12 v6 h-12 Z M40,76 h28 v3 h-28 Z" />
+    <!-- Phone / Link Emblem -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M60,46 h16 a2,2 0 0 1 2,2 v24 a2,2 0 0 1 -2,2 h-16 a2,2 0 0 1 -2,-2 v-24 a2,2 0 0 1 2,-2 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M63,49 h10 v18 h-10 Z" />
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M67,69 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0" />
+</vector>

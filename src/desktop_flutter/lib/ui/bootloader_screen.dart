@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/device_state.dart';
 import '../services/adb_device_scanner.dart';
 import '../services/boot_diagnostic_service.dart';
+import 'wireless_adb_dialog.dart';
 
 class BootloaderScreen extends StatefulWidget {
   final DeviceState deviceState;
@@ -30,6 +31,7 @@ class _BootloaderScreenState extends State<BootloaderScreen>
   String _deviceFilter = 'All'; // 'All', 'USB', 'Wireless'
 
   bool _isDiagnosticFinished = false;
+  bool _isDiagnosticRunning = false;
   Timer? _hotplugTimer;
   bool _isAutoDetecting = true;
   String _previousDeviceCountHash = '';
@@ -42,10 +44,10 @@ class _BootloaderScreenState extends State<BootloaderScreen>
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _startDiagnosticRun();
+    _startDiagnosticRun(force: true);
 
-    // Background Hot-Plug Auto-Detection Timer (polls every 2 seconds)
-    _hotplugTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+    // Background Hot-Plug Auto-Detection Timer (polls every 3 seconds)
+    _hotplugTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (_isAutoDetecting && mounted) {
         _autoDetectHotpluggedDevices();
       }
@@ -60,23 +62,37 @@ class _BootloaderScreenState extends State<BootloaderScreen>
   }
 
   Future<void> _autoDetectHotpluggedDevices() async {
+    if (_isDiagnosticRunning) return;
+
     try {
       final devices = await AdbDeviceScanner.scanDevices();
       final currentHash =
           devices.map((d) => '${d.serial}_${d.model}').join(',');
 
       if (currentHash != _previousDeviceCountHash) {
+        final hadNoDevices = _scannedDevices.isEmpty;
         _previousDeviceCountHash = currentHash;
         if (mounted) {
-          _startDiagnosticRun(
-            targetSerial: devices.isNotEmpty ? devices.first.serial : null,
-          );
+          setState(() {
+            _scannedDevices = List.from(devices);
+            if (_selectedSerial == null && _scannedDevices.isNotEmpty) {
+              _selectedSerial = _scannedDevices.first.serial;
+            }
+          });
+
+          // Only trigger a full diagnostic rerun if we newly connected a device when none existed
+          if (hadNoDevices && devices.isNotEmpty) {
+            _startDiagnosticRun(targetSerial: devices.first.serial, force: true);
+          }
         }
       }
     } catch (_) {}
   }
 
-  void _startDiagnosticRun({String? targetSerial}) {
+  void _startDiagnosticRun({String? targetSerial, bool force = false}) {
+    if (_isDiagnosticRunning && !force) return;
+
+    _isDiagnosticRunning = true;
     setState(() {
       _isDiagnosticFinished = false;
       _progress = 0.05;
@@ -104,6 +120,14 @@ class _BootloaderScreenState extends State<BootloaderScreen>
     );
 
     service.runDiagnostics().then((success) {
+      _isDiagnosticRunning = false;
+      if (mounted) {
+        setState(() {
+          _isDiagnosticFinished = true;
+        });
+      }
+    }).catchError((_) {
+      _isDiagnosticRunning = false;
       if (mounted) {
         setState(() {
           _isDiagnosticFinished = true;
@@ -113,346 +137,13 @@ class _BootloaderScreenState extends State<BootloaderScreen>
   }
 
   void _showWirelessAdbDialog() {
-    final ipController = TextEditingController(text: '192.168.1.');
-    final portController = TextEditingController(text: '5555');
-    bool isConnecting = false;
-    bool isScanningWifi = true;
-    bool showManualEntry = false;
-    List<DiscoveredWirelessDevice> discoveredWifiDevices = [];
-
     showDialog(
       context: context,
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void runWifiScan() async {
-              setDialogState(() {
-                isScanningWifi = true;
-                discoveredWifiDevices.clear();
-              });
-
-              final results = await AdbDeviceScanner.scanWirelessAdbServices();
-
-              if (dialogCtx.mounted) {
-                setDialogState(() {
-                  discoveredWifiDevices = results;
-                  isScanningWifi = false;
-                });
-              }
-            }
-
-            // Trigger scan on initial dialog open
-            if (isScanningWifi && discoveredWifiDevices.isEmpty) {
-              runWifiScan();
-            }
-
-            return AlertDialog(
-              backgroundColor: const Color(0xFF0F172A),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Color(0xFF00BFA5), width: 1.5),
-              ),
-              title: Row(
-                children: [
-                  const Icon(Icons.wifi_tethering_rounded,
-                      color: Color(0xFF00BFA5)),
-                  const SizedBox(width: 10),
-                  const Text("Wireless ADB Discovery",
-                      style: TextStyle(color: Colors.white, fontSize: 16)),
-                  const Spacer(),
-                  IconButton(
-                    icon: Icon(Icons.refresh_rounded,
-                        color: isScanningWifi
-                            ? const Color(0xFF00BFA5)
-                            : Colors.white54,
-                        size: 20),
-                    onPressed: isScanningWifi ? null : () => runWifiScan(),
-                    tooltip: "Scan Wi-Fi Network",
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: 440,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Scanning local Wi-Fi network for Wireless ADB debugging devices...",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Radar Scanner / Discovered List
-                    if (isScanningWifi) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        alignment: Alignment.center,
-                        child: const Column(
-                          children: [
-                            SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF00BFA5)),
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Text("Scanning Wi-Fi Network via mDNS & Probes...",
-                                style: TextStyle(
-                                    color: Color(0xFF00BFA5),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ] else if (discoveredWifiDevices.isNotEmpty) ...[
-                      const Text(
-                        "DISCOVERED WIRELESS DEVICES:",
-                        style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 180),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: discoveredWifiDevices.map((dev) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E293B),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color: const Color(0xFF00BFA5)
-                                          .withValues(alpha: 0.4)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.wifi_rounded,
-                                        color: Color(0xFF00BFA5), size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(dev.name,
-                                              style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12)),
-                                          Text(
-                                              "${dev.fullAddress} (${dev.serviceType})",
-                                              style: const TextStyle(
-                                                  color: Colors.grey,
-                                                  fontSize: 10)),
-                                        ],
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: isConnecting
-                                          ? null
-                                          : () async {
-                                              setDialogState(
-                                                  () => isConnecting = true);
-                                              final success =
-                                                  await AdbDeviceScanner
-                                                      .connectWirelessDevice(
-                                                          dev.ipAddress,
-                                                          port: dev.port);
-                                              if (dialogCtx.mounted)
-                                                Navigator.pop(dialogCtx);
-                                              if (mounted) {
-                                                if (success) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                          "Connected to ${dev.name} (${dev.fullAddress})!"),
-                                                      backgroundColor:
-                                                          const Color(
-                                                              0xFF00BFA5),
-                                                    ),
-                                                  );
-                                                  _startDiagnosticRun(
-                                                      targetSerial:
-                                                          dev.fullAddress);
-                                                } else {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                          "Failed to connect to ${dev.fullAddress}."),
-                                                      backgroundColor:
-                                                          Colors.redAccent,
-                                                    ),
-                                                  );
-                                                }
-                                              }
-                                            },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF00BFA5),
-                                        foregroundColor: Colors.black,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 6),
-                                      ),
-                                      child: const Text("Connect",
-                                          style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.wifi_off_rounded,
-                                color: Colors.amberAccent, size: 20),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                "No broadcasting Wireless ADB devices found on Wi-Fi. Ensure 'Wireless Debugging' is ON in Developer Options.",
-                                style: TextStyle(
-                                    color: Colors.white70, fontSize: 11),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () => setDialogState(
-                          () => showManualEntry = !showManualEntry),
-                      child: Text(
-                        showManualEntry
-                            ? "Hide Manual IP Entry"
-                            : "Manual IP Entry & Port",
-                        style: const TextStyle(
-                            color: Color(0xFF00BFA5),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-
-                    if (showManualEntry) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: ipController,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          labelText: "Device IP Address",
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          prefixIcon: const Icon(Icons.wifi_rounded,
-                              color: Color(0xFF00BFA5), size: 18),
-                          filled: true,
-                          fillColor: const Color(0xFF1E293B),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: portController,
-                        keyboardType: TextInputType.number,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          labelText: "ADB Port (Default 5555)",
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          prefixIcon: const Icon(
-                              Icons.settings_ethernet_rounded,
-                              color: Color(0xFF00BFA5),
-                              size: 18),
-                          filled: true,
-                          fillColor: const Color(0xFF1E293B),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text("Cancel",
-                      style: TextStyle(color: Colors.white54)),
-                ),
-                if (showManualEntry)
-                  ElevatedButton(
-                    onPressed: isConnecting
-                        ? null
-                        : () async {
-                            setDialogState(() => isConnecting = true);
-                            final ip = ipController.text.trim();
-                            final port =
-                                int.tryParse(portController.text.trim()) ??
-                                    5555;
-
-                            final success =
-                                await AdbDeviceScanner.connectWirelessDevice(ip,
-                                    port: port);
-                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                            if (mounted) {
-                              if (success) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        "Connected to Wireless ADB at $ip:$port!"),
-                                    backgroundColor: const Color(0xFF00BFA5),
-                                  ),
-                                );
-                                _startDiagnosticRun(targetSerial: "$ip:$port");
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        "Failed to connect to $ip:$port. Verify IP & Wireless Debugging."),
-                                    backgroundColor: Colors.redAccent,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00BFA5),
-                      foregroundColor: Colors.black,
-                    ),
-                    child: isConnecting
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.black),
-                          )
-                        : const Text("Connect Device"),
-                  ),
-              ],
-            );
+      builder: (context) {
+        return WirelessAdbDialog(
+          onConnected: (ipAddress) {
+            Navigator.of(context).pop();
+            _startDiagnosticRun(targetSerial: ipAddress);
           },
         );
       },
@@ -804,7 +495,7 @@ class _BootloaderScreenState extends State<BootloaderScreen>
 
                                       return InkWell(
                                         onTap: () => _startDiagnosticRun(
-                                            targetSerial: dev.serial),
+                                            targetSerial: dev.serial, force: true),
                                         borderRadius: BorderRadius.circular(12),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -979,7 +670,7 @@ class _BootloaderScreenState extends State<BootloaderScreen>
                                 const SizedBox(width: 12),
                                 OutlinedButton.icon(
                                   onPressed: () => _startDiagnosticRun(
-                                      targetSerial: _selectedSerial),
+                                      targetSerial: _selectedSerial, force: true),
                                   icon: const Icon(Icons.refresh_rounded,
                                       size: 18),
                                   label: const Text("Re-run Diagnosis"),

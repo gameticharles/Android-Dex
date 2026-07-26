@@ -355,4 +355,31 @@ class AppLauncherService {
     await Process.run(
         adbPath, ['shell', 'input', 'keyevent', keyCode.toString()]);
   }
+
+  /// Send touch tap event to connected Android device
+  static Future<void> sendTouchTap(int x, int y) async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      await Process.run(
+          adbPath, ['shell', 'input', 'tap', x.toString(), y.toString()]);
+    } catch (_) {}
+  }
+
+  /// Send touch swipe/drag event to connected Android device
+  static Future<void> sendTouchSwipe(int x1, int y1, int x2, int y2,
+      [int durationMs = 300]) async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      await Process.run(adbPath, [
+        'shell',
+        'input',
+        'swipe',
+        x1.toString(),
+        y1.toString(),
+        x2.toString(),
+        y2.toString(),
+        durationMs.toString(),
+      ]);
+    } catch (_) {}
+  }
 }

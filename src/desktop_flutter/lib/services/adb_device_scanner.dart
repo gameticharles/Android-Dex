@@ -53,8 +53,8 @@ class AdbDeviceScanner {
     return 'adb';
   }
 
-  /// Scan for connected real ADB devices (detects USB vs Wireless IP:Port)
-  static Future<List<RealDevice>> scanDevices() async {
+  /// Scan for connected real ADB devices (USB & automatically discovered Wireless network devices)
+  static Future<List<RealDevice>> scanDevices({bool includeNetworkWireless = true}) async {
     final adbPath = await getAdbPath();
     final result = await Process.run(adbPath, ['devices', '-l']);
     final lines = result.stdout.toString().split('\n');
@@ -86,6 +86,25 @@ class AdbDeviceScanner {
           isWireless: isWireless,
         ));
       }
+    }
+
+    // Automatically scan Wi-Fi network for broadcasting/open Wireless ADB devices
+    if (includeNetworkWireless) {
+      try {
+        final wirelessDiscovered = await scanWirelessAdbServices();
+        for (final w in wirelessDiscovered) {
+          final targetSerial = '${w.ipAddress}:${w.port}';
+          final exists = devices.any((d) => d.serial == targetSerial || d.serial.startsWith(w.ipAddress));
+          if (!exists) {
+            devices.add(RealDevice(
+              serial: targetSerial,
+              model: w.name.isNotEmpty ? w.name : 'Wireless Device (${w.ipAddress})',
+              product: 'Wi-Fi Network',
+              isWireless: true,
+            ));
+          }
+        }
+      } catch (_) {}
     }
 
     return devices;
@@ -128,7 +147,7 @@ class AdbDeviceScanner {
       }
     } catch (_) {}
 
-    // Subnet Socket probe fallback for local network
+    // Subnet Socket probe fallback for local network (probing port 5555)
     try {
       final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
       for (final interface in interfaces) {
@@ -136,20 +155,31 @@ class AdbDeviceScanner {
           if (!addr.isLoopback) {
             final ipPrefix = addr.address.substring(0, addr.address.lastIndexOf('.'));
             
-            // Probe common local IPs for Wireless ADB port 5555
-            final probeFutures = <Future<Socket?>>[];
+            final probeFutures = <Future<String?>>[];
             for (int i = 1; i <= 254; i++) {
               final targetIp = '$ipPrefix.$i';
               if (targetIp == addr.address) continue;
 
               probeFutures.add(
-                Socket.connect(targetIp, 5555, timeout: const Duration(milliseconds: 120))
-                    .then((sock) {
+                Socket.connect(targetIp, 5555, timeout: const Duration(milliseconds: 150))
+                    .then<String?>((sock) {
                       sock.destroy();
-                      return null;
+                      return targetIp;
                     })
                     .catchError((_) => null),
               );
+            }
+
+            final probeResults = await Future.wait(probeFutures);
+            for (final ip in probeResults) {
+              if (ip != null && !discovered.any((d) => d.ipAddress == ip)) {
+                discovered.add(DiscoveredWirelessDevice(
+                  ipAddress: ip,
+                  port: 5555,
+                  name: 'Wireless Device ($ip)',
+                  serviceType: '_adb._tcp',
+                ));
+              }
             }
           }
         }
@@ -159,13 +189,59 @@ class AdbDeviceScanner {
     return discovered;
   }
 
+  /// Enable Wireless TCP/IP mode on a connected device (e.g. adb -s <serial> tcpip 5555)
+  static Future<bool> enableTcpipMode(String serial, {int port = 5555}) async {
+    try {
+      final adbPath = await getAdbPath();
+      final result = await Process.run(adbPath, ['-s', serial, 'tcpip', '$port']);
+      final out = result.stdout.toString().toLowerCase();
+      return out.contains('restarting in tcpip mode') || out.contains('restarting in tcp mode') || out.contains('port: 5555');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Resolve local Wi-Fi IP address of an Android device
+  static Future<String?> getDeviceWifiAddress(String serial) async {
+    try {
+      final adbPath = await getAdbPath();
+      final res = await Process.run(adbPath, ['-s', serial, 'shell', 'ip', '-f', 'inet', 'addr', 'show', 'wlan0']);
+      final stdout = res.stdout.toString();
+      final match = RegExp(r'inet\s+(\d+\.\d+\.\d+\.\d+)').firstMatch(stdout);
+      if (match != null) {
+        return match.group(1);
+      }
+
+      // Fallback via ip route
+      final routeRes = await Process.run(adbPath, ['-s', serial, 'shell', 'ip', 'route']);
+      final routeStdout = routeRes.stdout.toString();
+      final routeMatch = RegExp(r'src\s+(\d+\.\d+\.\d+\.\d+)').firstMatch(routeStdout);
+      if (routeMatch != null) {
+        return routeMatch.group(1);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Pair a wireless ADB device using Android 11+ Pairing Code (adb pair <ip:port> <code>)
+  static Future<bool> pairWirelessDevice(String pairingIpWithPort, String pairingCode) async {
+    try {
+      final adbPath = await getAdbPath();
+      final result = await Process.run(adbPath, ['pair', pairingIpWithPort, pairingCode]).timeout(const Duration(seconds: 8));
+      final out = result.stdout.toString().toLowerCase();
+      return out.contains('successfully paired') || out.contains('already paired');
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Connect to a wireless ADB device via IP and Port (e.g., 192.168.1.105:5555)
   static Future<bool> connectWirelessDevice(String ipAddress, {int port = 5555}) async {
     try {
       final adbPath = await getAdbPath();
       final target = ipAddress.contains(':') ? ipAddress : '$ipAddress:$port';
-      final result = await Process.run(adbPath, ['connect', target]);
-      final out = result.stdout.toString();
+      final result = await Process.run(adbPath, ['connect', target]).timeout(const Duration(seconds: 6));
+      final out = result.stdout.toString().toLowerCase();
       return out.contains('connected to') || out.contains('already connected');
     } catch (_) {
       return false;

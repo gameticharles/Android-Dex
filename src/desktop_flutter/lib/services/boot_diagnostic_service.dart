@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import '../models/device_state.dart';
 import 'adb_device_scanner.dart';
+import 'boot_manager.dart';
 
 enum DiagnosticStatus { pending, running, passed, warning, failed }
 
@@ -119,8 +120,10 @@ class BootDiagnosticService {
             adbPath, ['-s', activeSerial, 'reverse', 'tcp:38947', 'tcp:38947']);
         await Process.run(
             adbPath, ['-s', activeSerial, 'reverse', 'tcp:4567', 'tcp:4567']);
+        await Process.run(
+            adbPath, ['-s', activeSerial, 'reverse', 'tcp:8080', 'tcp:8080']);
         steps[2].status = DiagnosticStatus.passed;
-        steps[2].detail = 'Ports 38947 & 4567 active for $activeSerial';
+        steps[2].detail = 'Ports 38947, 4567 & 8080 active for $activeSerial';
       } catch (e) {
         steps[2].status = DiagnosticStatus.warning;
         steps[2].detail = 'Port reverse warning: $e';
@@ -157,14 +160,38 @@ class BootDiagnosticService {
     onUpdate(0.92, 'Permissions audit complete', steps, devices);
     await Future.delayed(const Duration(milliseconds: 200));
 
-    // Step 5: Dex Companion Engine Handshake
+    // Step 5: Dex Companion Engine Handshake & Auto-Deployment
     steps[4].status = DiagnosticStatus.running;
-    steps[4].detail = 'Verifying logic engine companion service...';
+    steps[4].detail = 'Verifying & deploying companion service...';
     onUpdate(0.98, 'Handshaking with Dex engine...', steps, devices);
 
-    await Future.delayed(const Duration(milliseconds: 200));
-    steps[4].status = DiagnosticStatus.passed;
-    steps[4].detail = 'Dex Desktop Engine Initialized';
+    if (devices.isNotEmpty) {
+      final activeSerial = targetSerial ?? devices.first.serial;
+      try {
+        final bootManager = BootManager(
+          deviceIp: activeSerial,
+          onProgress: (p, statusText) {
+            steps[4].detail = statusText;
+            onUpdate(0.95 + (p * 0.05), statusText, steps, devices);
+          },
+        );
+
+        await bootManager.executeBootProtocol(
+          localJarPath:
+              '/home/charlesgameti/Documents/GitHub/Android-Dex/reengineering/linux_extracted/All helper_linux/_server_apk/adb_device_manger.jar',
+          remoteJarPath: '/data/local/tmp/adb_device_manger.jar',
+          companionPackage: 'com.androiddex.companion',
+        );
+        steps[4].status = DiagnosticStatus.passed;
+        steps[4].detail = 'Dex Companion Engine Initialized & Active';
+      } catch (e) {
+        steps[4].status = DiagnosticStatus.warning;
+        steps[4].detail = 'Companion deployment warning: $e';
+      }
+    } else {
+      steps[4].status = DiagnosticStatus.passed;
+      steps[4].detail = 'Dex Desktop Engine Initialized';
+    }
 
     onUpdate(1.00, 'Diagnostic System Check Complete', steps, devices);
     return allSuccess;

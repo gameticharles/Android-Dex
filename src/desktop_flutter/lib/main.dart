@@ -74,7 +74,7 @@ class _AdbDeviceManagerAppState extends State<AdbDeviceManagerApp> {
       localJarPath:
           '/home/charlesgameti/Documents/GitHub/Android-Dex/reengineering/linux_extracted/All helper_linux/_server_apk/adb_device_manger.jar',
       remoteJarPath: '/data/local/tmp/adb_device_manger.jar',
-      companionPackage: 'com.shrey.adbdevicemanager',
+      companionPackage: 'com.androiddex.companion',
     );
   }
 

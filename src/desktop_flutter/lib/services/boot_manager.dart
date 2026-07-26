@@ -15,14 +15,23 @@ class BootManager {
     required String companionPackage,
   }) async {
     try {
-      // Step 1: Connect ADB
-      onProgress(0.10, "Connecting to Android device...");
-      await _runAdb(['connect', deviceIp]);
+      final bool isWirelessIp = deviceIp.contains(':') || RegExp(r'^\d+\.\d+\.\d+\.\d+').hasMatch(deviceIp);
+
+      // Step 1: Connect ADB or Enable TCPIP Mode
+      if (isWirelessIp) {
+        onProgress(0.10, "Connecting to Wireless ADB ($deviceIp)...");
+        await _runAdb(['connect', deviceIp]);
+      } else {
+        onProgress(0.10, "Connecting to Android device over USB ($deviceIp)...");
+        // Enable Wireless TCP/IP mode on USB devices so unplugging USB works seamlessly
+        _runAdb(['tcpip', '5555']).catchError((_) => "");
+      }
 
       // Step 2: Reverse Port Forwarding
-      onProgress(0.20, "Configuring reverse ports (38947, 4567)...");
+      onProgress(0.20, "Configuring reverse ports (38947, 4567, 8080)...");
       await _runAdb(['reverse', 'tcp:38947', 'tcp:38947']);
       await _runAdb(['reverse', 'tcp:4567', 'tcp:4567']);
+      await _runAdb(['reverse', 'tcp:8080', 'tcp:8080']);
 
       // Step 3 & 4: PARALLEL EXECUTION (Performance Fix #2)
       // Concurrently check JAR hash and package status
@@ -43,15 +52,22 @@ class BootManager {
         onProgress(0.48, "Logic Engine up-to-date (cached) ✓");
       }
 
-      // Step 5: Launch Companion App if installed
-      if (isAppInstalled) {
-        onProgress(0.72, "Starting companion services...");
-        await _runAdb([
-          'shell',
-          'am', 'startservice',
-          '-n', '$companionPackage/.InitializationService'
-        ]);
+      // Step 5: Check & Deploy Companion APK if missing
+      if (!isAppInstalled) {
+        onProgress(0.60, "Deploying Android Companion App APK...");
+        const apkPath =
+            '/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/build/outputs/apk/debug/app-debug.apk';
+        if (await File(apkPath).exists()) {
+          await _runAdb(['install', '-r', apkPath]);
+        }
       }
+
+      onProgress(0.78, "Starting companion services...");
+      await _runAdb([
+        'shell',
+        'am', 'startservice',
+        '-n', '$companionPackage/.InitializationService'
+      ]);
 
       // Step 6: Final Handshake
       onProgress(0.93, "Waiting for system handshake...");
@@ -105,7 +121,19 @@ class BootManager {
 
   Future<String> _runAdb(List<String> args) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final result = await Process.run(adbPath, args);
+    final List<String> finalArgs = [];
+
+    // 'adb connect' command should not include -s
+    if (args.isNotEmpty && args[0] == 'connect') {
+      final result = await Process.run(adbPath, args);
+      return result.stdout.toString();
+    }
+
+    if (deviceIp.isNotEmpty && !args.contains('-s')) {
+      finalArgs.addAll(['-s', deviceIp]);
+    }
+    finalArgs.addAll(args);
+    final result = await Process.run(adbPath, finalArgs);
     return result.stdout.toString();
   }
 }

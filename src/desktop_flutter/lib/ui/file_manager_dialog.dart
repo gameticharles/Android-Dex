@@ -146,20 +146,30 @@ class _FileManagerDialogState extends State<FileManagerDialog> {
   }
 
   Future<void> _uploadFile() async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
-      final localPath = result.files.single.path!;
-      final success = await FileManagerService.pushFile(localPath, _currentPath);
+    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+    if (result != null && result.files.isNotEmpty) {
+      final paths =
+          result.files.map((f) => f.path).whereType<String>().toList();
+      await _uploadMultipleFiles(paths);
+    }
+  }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? "File uploaded successfully!" : "Failed to upload file."),
-            backgroundColor: success ? const Color(0xFF00BFA5) : Colors.redAccent,
-          ),
-        );
-        if (success) _loadDirectory(_currentPath, addHistory: false);
-      }
+  Future<void> _uploadMultipleFiles(List<String> paths) async {
+    int successCount = 0;
+    for (final path in paths) {
+      final ok = await FileManagerService.pushFile(path, _currentPath);
+      if (ok) successCount++;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "Uploaded $successCount of ${paths.length} file(s) to $_currentPath"),
+          backgroundColor: const Color(0xFF00BFA5),
+        ),
+      );
+      _loadDirectory(_currentPath, addHistory: false);
     }
   }
 

@@ -5,11 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import '../models/device_state.dart';
 import '../services/app_launcher_service.dart';
+import '../services/clipboard_sync_service.dart';
 import '../services/mirror_service.dart';
 import '../services/real_adb_sync_service.dart';
+import '../services/call_state_service.dart';
 import 'app_drawer_dialog.dart';
+import 'app_mirror_stream_widget.dart';
 import 'battery_popover.dart';
 import 'file_manager_dialog.dart';
+import 'incoming_call_banner.dart';
 import 'notification_flyout.dart';
 import 'media_player_widget.dart';
 import 'quick_settings_popover.dart';
@@ -20,7 +24,7 @@ import 'unified_phone_dialog.dart';
 
 import 'desktop_window_widget.dart';
 
-enum TaskbarPopoverType { none, media, notifications, battery, settings }
+enum TaskbarPopoverType { none, media, notifications, battery, settings, health }
 
 enum WindowSnapZone {
   none,
@@ -225,12 +229,17 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
       if (mounted) setState(() => _now = DateTime.now());
     });
 
+    ClipboardSyncService.startSync();
+    CallStateService.startSync();
+
     _lastConnectedState = widget.deviceState.isAdbConnected.value;
     widget.deviceState.isAdbConnected.addListener(_onDeviceConnectionChanged);
   }
 
   @override
   void dispose() {
+    CallStateService.stopSync();
+    ClipboardSyncService.stopSync();
     widget.deviceState.isAdbConnected
         .removeListener(_onDeviceConnectionChanged);
     _clockTimer.cancel();
@@ -391,12 +400,28 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
     }
   }
 
+  void _launchAppMirrorWindow(String packageName, String appName) {
+    final winId = 'app_${packageName}_${DateTime.now().millisecondsSinceEpoch}';
+    openDesktopWindow(
+      id: winId,
+      title: appName,
+      icon: Icons.screen_share_rounded,
+      themeColor: const Color(0xFF3B82F6),
+      content: AppMirrorStreamWidget(
+        packageName: packageName,
+        title: appName,
+      ),
+      defaultSize: const Size(420, 720),
+    );
+  }
+
   void _showAppDrawer(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AppDrawerDialog(
         deviceState: widget.deviceState,
         onStartBoot: widget.onStartBoot,
+        onLaunchAppWindow: (pkg, name) => _launchAppMirrorWindow(pkg, name),
       ),
     );
   }
@@ -764,6 +789,16 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
               ),
             ),
 
+          // FLOATING CALL BANNER OVERLAY
+          const Positioned(
+            top: 24,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: IncomingCallBanner(),
+            ),
+          ),
+
           // TASKBAR DOCK
           Positioned(
             left: 16,
@@ -961,83 +996,87 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                                   TaskbarPopoverType.notifications),
                               onDismiss: () => setState(() =>
                                   _activePopover = TaskbarPopoverType.none),
-                              compactChild: Row(
-                                children: [
-                                  _buildStackedNotificationIcons(notifs),
-                                  if (count > 0) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.redAccent,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        count > 9 ? "9+" : "$count",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
+                                compactChild: Row(
+                                  children: [
+                                    _buildStackedNotificationIcons(notifs),
+                                    if (count > 0) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          count > 9 ? "9+" : "$count",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ],
+                                ),
+                                expandedChild: NotificationFlyout(
+                                  deviceState: widget.deviceState,
+                                  onClose: () => setState(
+                                      () => _activePopover = TaskbarPopoverType.none),
+                                ),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(width: 6),
+
+                          // 2. Battery Island
+                          ValueListenableBuilder<int>(
+                            valueListenable: widget.deviceState.batteryPercentage,
+                            builder: (_, battery, __) =>
+                                SmartTaskbarPopoverButton(
+                              isExpanded:
+                                  _activePopover == TaskbarPopoverType.battery,
+                              onTap: () =>
+                                  _togglePopover(TaskbarPopoverType.battery),
+                              onDismiss: () => setState(
+                                  () => _activePopover = TaskbarPopoverType.none),
+                              compactChild: Row(
+                                children: [
+                                  const Icon(Icons.battery_charging_full,
+                                      color: Colors.greenAccent, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "$battery%",
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold),
+                                  ),
                                 ],
                               ),
-                              expandedChild: NotificationFlyout(
-                                  deviceState: widget.deviceState),
-                            );
-                          },
-                        ),
+                              expandedChild: const BatteryPopover(),
+                            ),
+                          ),
 
-                        const SizedBox(width: 6),
+                          const SizedBox(width: 6),
 
-                        // 2. Battery Island
-                        ValueListenableBuilder<int>(
-                          valueListenable: widget.deviceState.batteryPercentage,
-                          builder: (_, battery, __) =>
-                              SmartTaskbarPopoverButton(
+                          // 3. Control Center Settings Island
+                          SmartTaskbarPopoverButton(
                             isExpanded:
-                                _activePopover == TaskbarPopoverType.battery,
+                                _activePopover == TaskbarPopoverType.settings,
                             onTap: () =>
-                                _togglePopover(TaskbarPopoverType.battery),
+                                _togglePopover(TaskbarPopoverType.settings),
                             onDismiss: () => setState(
                                 () => _activePopover = TaskbarPopoverType.none),
-                            compactChild: Row(
-                              children: [
-                                const Icon(Icons.battery_charging_full,
-                                    color: Colors.greenAccent, size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "$battery%",
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            expandedChild: const BatteryPopover(),
+                            compactChild: const Icon(Icons.settings,
+                                color: Colors.white70, size: 18),
+                            expandedChild: const QuickSettingsPopover(),
                           ),
-                        ),
-
-                        const SizedBox(width: 6),
-
-                        // 3. Control Center Settings Island
-                        SmartTaskbarPopoverButton(
-                          isExpanded:
-                              _activePopover == TaskbarPopoverType.settings,
-                          onTap: () =>
-                              _togglePopover(TaskbarPopoverType.settings),
-                          onDismiss: () => setState(
-                              () => _activePopover = TaskbarPopoverType.none),
-                          compactChild: const Icon(Icons.settings,
-                              color: Colors.white70, size: 18),
-                          expandedChild: const QuickSettingsPopover(),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
 
                     const SizedBox(width: 6),
                     // ZONE 4: Right Clock & Display Island
