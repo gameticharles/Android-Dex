@@ -16,18 +16,22 @@ class PairingResult {
   });
 }
 
-/// Client service executing pairing protocol with Android Companion.
+/**
+ * Client service executing pairing protocol with Android Companion.
+ */
 class PairingService {
   static Future<PairingResult> requestPairing() async {
-    try {
-      final deviceId = await DesktopIdentityService.getDeviceId();
-      final computerName = DesktopIdentityService.getComputerName();
+    final deviceId = await DesktopIdentityService.getDeviceId();
+    final computerName = DesktopIdentityService.getComputerName();
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 1000);
-      final req = await client
-          .postUrl(Uri.parse('http://127.0.0.1:8080/pairing/request'));
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 1000)
+      ..idleTimeout = Duration.zero;
+
+    try {
+      final req = await client.postUrl(Uri.parse('http://127.0.0.1:8080/pairing/request'));
       req.headers.set('content-type', 'application/json');
+      req.headers.set('Connection', 'close');
       req.add(utf8.encode(jsonEncode({
         'device_id': deviceId,
         'computer_name': computerName,
@@ -37,7 +41,6 @@ class PairingService {
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
-        client.close();
         final json = jsonDecode(bodyStr) as Map<String, dynamic>;
         final status = json['status']?.toString() ?? 'FAILED';
         final token = json['auth_token']?.toString();
@@ -51,28 +54,30 @@ class PairingService {
           authToken: token,
         );
       }
-      client.close();
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
     return PairingResult(
       status: 'FAILED',
-      deviceId: await DesktopIdentityService.getDeviceId(),
-      computerName: DesktopIdentityService.getComputerName(),
+      deviceId: deviceId,
+      computerName: computerName,
     );
   }
 
   static Future<PairingResult> checkPairingStatus() async {
-    try {
-      final deviceId = await DesktopIdentityService.getDeviceId();
-      final computerName = DesktopIdentityService.getComputerName();
+    final deviceId = await DesktopIdentityService.getDeviceId();
+    final computerName = DesktopIdentityService.getComputerName();
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 800);
-      final req = await client.getUrl(Uri.parse(
-          'http://127.0.0.1:8080/pairing/status?device_id=$deviceId'));
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 800)
+      ..idleTimeout = Duration.zero;
+
+    try {
+      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/pairing/status?device_id=$deviceId'));
+      req.headers.set('Connection', 'close');
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
-        client.close();
         final json = jsonDecode(bodyStr) as Map<String, dynamic>;
         final status = json['status']?.toString() ?? 'UNKNOWN';
         final token = json['auth_token']?.toString();
@@ -86,12 +91,13 @@ class PairingService {
           authToken: token,
         );
       }
-      client.close();
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
     return PairingResult(
       status: 'FAILED',
-      deviceId: await DesktopIdentityService.getDeviceId(),
-      computerName: DesktopIdentityService.getComputerName(),
+      deviceId: deviceId,
+      computerName: computerName,
     );
   }
 }

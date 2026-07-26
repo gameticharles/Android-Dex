@@ -71,8 +71,10 @@ class CallStateService {
 
   static Future<void> _fetchCallState([DeviceState? deviceState]) async {
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/telephony/state'));
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(milliseconds: 600);
+      final req = await client
+          .getUrl(Uri.parse('http://127.0.0.1:8080/telephony/state'));
       final resp = await req.close();
       if (resp.statusCode == 200) {
         final body = await resp.transform(utf8.decoder).join();
@@ -109,7 +111,8 @@ class CallStateService {
       ),
     );
 
-    if (callNotif.packageName.isNotEmpty && currentCallState.value.state == "IDLE") {
+    if (callNotif.packageName.isNotEmpty &&
+        currentCallState.value.state == "IDLE") {
       currentCallState.value = CallStateData(
         state: "RINGING",
         name: callNotif.title.isNotEmpty ? callNotif.title : "Incoming Call",
@@ -121,7 +124,8 @@ class CallStateService {
   }
 
   static void _updateState(CallStateData newState) {
-    if (newState.state == "ACTIVE" && currentCallState.value.state != "ACTIVE") {
+    if (newState.state == "ACTIVE" &&
+        currentCallState.value.state != "ACTIVE") {
       _startDurationTimer();
     } else if (newState.state != "ACTIVE") {
       _durationTimer?.cancel();
@@ -134,7 +138,9 @@ class CallStateService {
         name: newState.name.isNotEmpty ? newState.name : "Sophia",
         number: newState.number,
         location: newState.location,
-        durationSec: newState.durationSec > 0 ? newState.durationSec : _activeDurationCounter,
+        durationSec: newState.durationSec > 0
+            ? newState.durationSec
+            : _activeDurationCounter,
         isSpeakerOn: newState.isSpeakerOn,
       );
     } else {
@@ -162,11 +168,18 @@ class CallStateService {
 
   static Future<void> answerCall() async {
     // 1. HTTP Endpoint Call
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/telephony/answer'));
+      final req = await client
+          .getUrl(Uri.parse('http://127.0.0.1:8080/telephony/answer'));
+      req.headers.set('Connection', 'close');
       await req.close();
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      client.close(force: true);
+    }
 
     // 2. ADB Telecom / Keyevent Fallback
     try {
@@ -180,7 +193,9 @@ class CallStateService {
     _startDurationTimer();
     currentCallState.value = CallStateData(
       state: "ACTIVE",
-      name: currentCallState.value.name.isNotEmpty ? currentCallState.value.name : "Sophia",
+      name: currentCallState.value.name.isNotEmpty
+          ? currentCallState.value.name
+          : "Sophia",
       number: currentCallState.value.number,
       location: currentCallState.value.location,
       durationSec: 0,
@@ -190,11 +205,18 @@ class CallStateService {
 
   static Future<void> endCall() async {
     // 1. HTTP Endpoint Call
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/telephony/end'));
+      final req =
+          await client.getUrl(Uri.parse('http://127.0.0.1:8080/telephony/end'));
+      req.headers.set('Connection', 'close');
       await req.close();
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      client.close(force: true);
+    }
 
     // 2. ADB Keyevent Fallback
     try {
@@ -212,11 +234,18 @@ class CallStateService {
 
   static Future<void> toggleSpeaker() async {
     final curSpeaker = currentCallState.value.isSpeakerOn;
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient()..connectionTimeout = const Duration(milliseconds: 600);
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/telephony/toggle_speaker'));
+      final req = await client
+          .getUrl(Uri.parse('http://127.0.0.1:8080/telephony/toggle_speaker'));
+      req.headers.set('Connection', 'close');
       await req.close();
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      client.close(force: true);
+    }
 
     currentCallState.value = CallStateData(
       state: currentCallState.value.state,
@@ -229,7 +258,8 @@ class CallStateService {
   }
 
   // Trigger simulated incoming call for testing
-  static void triggerSimulatedCall({String name = "Sophia", String location = "Shenzhen"}) {
+  static void triggerSimulatedCall(
+      {String name = "Sophia", String location = "Shenzhen"}) {
     currentCallState.value = CallStateData(
       state: "RINGING",
       name: name,

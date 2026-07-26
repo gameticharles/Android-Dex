@@ -78,14 +78,15 @@ class RealAdbSyncService {
   /// Fetch real live SMS (inbox & sent) from Android phone
   static Future<List<RealSmsMessage>> fetchRealSms() async {
     // 1. Try Android Companion HTTP endpoint /sms
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 600);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/sms'));
+      req.headers.set('Connection', 'close');
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
-        client.close();
         final json = jsonDecode(bodyStr) as Map<String, dynamic>;
         final convs = json['conversations'] as List?;
         if (convs != null && convs.isNotEmpty) {
@@ -93,10 +94,12 @@ class RealAdbSyncService {
           for (final c in convs) {
             final threadId = c['thread_id'];
             if (threadId != null) {
+              final mClient = HttpClient()
+                ..connectionTimeout = const Duration(milliseconds: 400)
+                ..idleTimeout = Duration.zero;
               try {
-                final mClient = HttpClient();
-                mClient.connectionTimeout = const Duration(milliseconds: 400);
                 final mReq = await mClient.getUrl(Uri.parse('http://127.0.0.1:8080/sms/messages?thread_id=$threadId'));
+                mReq.headers.set('Connection', 'close');
                 final mRes = await mReq.close();
                 if (mRes.statusCode == 200) {
                   final mStr = await mRes.transform(utf8.decoder).join();
@@ -113,14 +116,17 @@ class RealAdbSyncService {
                     }
                   }
                 }
-                mClient.close();
-              } catch (_) {}
+              } catch (_) {} finally {
+                mClient.close(force: true);
+              }
             }
           }
           if (result.isNotEmpty) return result;
         }
       }
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
 
     // 2. Fallback to ADB content query for content://sms
     try {
@@ -170,18 +176,21 @@ class RealAdbSyncService {
   /// Send real SMS to recipient via Companion HTTP or ADB fallback
   static Future<bool> sendSms(String recipient, String message) async {
     if (recipient.trim().isEmpty || message.trim().isEmpty) return false;
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 600);
       final uri = Uri.parse('http://127.0.0.1:8080/sms/send').replace(
           queryParameters: {'recipient': recipient.trim(), 'message': message.trim()});
       final req = await client.getUrl(uri);
+      req.headers.set('Connection', 'close');
       final res = await req.close();
-      client.close();
       if (res.statusCode == 200) {
         return true;
       }
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
 
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
@@ -450,17 +459,18 @@ class RealAdbSyncService {
   static Future<RealMediaState> fetchRealMediaState(
       {RealMediaState? currentState}) async {
     // 1. Try fetching from Android Companion app HTTP route first
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 400)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 400);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media'));
+      req.headers.set('Connection', 'close');
       final token = DesktopIdentityService.activeAuthToken;
       if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
         final json = jsonDecode(bodyStr) as Map<String, dynamic>;
-        client.close();
 
         final title = json['title']?.toString() ?? '';
         final artist = json['artist']?.toString() ?? '';
@@ -491,7 +501,9 @@ class RealAdbSyncService {
           );
         }
       }
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
 
     // 2. Robust ADB dumpsys media_session parsing
     try {
@@ -678,16 +690,19 @@ class RealAdbSyncService {
 
   /// Send seek command to active Android MediaSession
   static Future<void> seekMedia(int positionMs) async {
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 300)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 300);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/seek?position_ms=$positionMs'));
+      req.headers.set('Connection', 'close');
       final token = DesktopIdentityService.activeAuthToken;
       if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
-      client.close();
       if (res.statusCode == 200) return;
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
 
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
@@ -703,16 +718,19 @@ class RealAdbSyncService {
 
   /// Send transport control command to active Android MediaSession (play, pause, next, prev)
   static Future<void> sendTransportCommand(String cmd) async {
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 300)
+      ..idleTimeout = Duration.zero;
     try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(milliseconds: 300);
       final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/control?cmd=$cmd'));
+      req.headers.set('Connection', 'close');
       final token = DesktopIdentityService.activeAuthToken;
       if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
-      client.close();
       if (res.statusCode == 200) return;
-    } catch (_) {}
+    } catch (_) {} finally {
+      client.close(force: true);
+    }
   }
 }
 
