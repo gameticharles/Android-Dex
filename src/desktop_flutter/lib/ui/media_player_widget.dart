@@ -183,7 +183,10 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
         ? ValueListenableBuilder<RealMediaState>(
             valueListenable: widget.deviceState!.mediaState,
             builder: (context, media, _) {
-              _syncPlaybackState();
+              if (!_isDraggingSlider) {
+                _currentPosMs = media.positionMs;
+              }
+              _manageTicker(media.isPlaying, media.durationMs);
               return _buildFlyoutBody(media);
             },
           )
@@ -285,14 +288,17 @@ class _MediaPlayerFlyoutState extends State<MediaPlayerFlyout> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
+                          height: 1.2,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Text(
-                        album.isNotEmpty ? "$artist • $album" : artist,
+                        (album.isNotEmpty && album != title && album != artist)
+                            ? "$artist • $album"
+                            : artist,
                         style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 11,

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,7 @@ import '../services/call_state_service.dart';
 import 'app_drawer_dialog.dart';
 import 'app_mirror_stream_widget.dart';
 import 'battery_popover.dart';
+import 'device_health_popover.dart';
 import 'file_manager_dialog.dart';
 import 'incoming_call_banner.dart';
 import 'notification_flyout.dart';
@@ -21,10 +24,19 @@ import 'smart_app_icon_widget.dart';
 import 'smart_taskbar_popover_button.dart';
 import 'sms_dialog.dart';
 import 'unified_phone_dialog.dart';
+import 'wireless_adb_dialog.dart';
+import '../services/adb_device_scanner.dart';
 
 import 'desktop_window_widget.dart';
 
-enum TaskbarPopoverType { none, media, notifications, battery, settings, health }
+enum TaskbarPopoverType {
+  none,
+  media,
+  notifications,
+  battery,
+  settings,
+  health
+}
 
 enum WindowSnapZone {
   none,
@@ -84,6 +96,7 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
   DateTime _now = DateTime.now();
   bool _isPlaying = false;
   bool _isFullScreen = false;
+  bool _isDexLocked = false;
   TaskbarPopoverType _activePopover = TaskbarPopoverType.none;
 
   // Desktop Windowing State
@@ -996,87 +1009,131 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                                   TaskbarPopoverType.notifications),
                               onDismiss: () => setState(() =>
                                   _activePopover = TaskbarPopoverType.none),
-                                compactChild: Row(
-                                  children: [
-                                    _buildStackedNotificationIcons(notifs),
-                                    if (count > 0) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.redAccent,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          count > 9 ? "9+" : "$count",
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                expandedChild: NotificationFlyout(
-                                  deviceState: widget.deviceState,
-                                  onClose: () => setState(
-                                      () => _activePopover = TaskbarPopoverType.none),
-                                ),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(width: 6),
-
-                          // 2. Battery Island
-                          ValueListenableBuilder<int>(
-                            valueListenable: widget.deviceState.batteryPercentage,
-                            builder: (_, battery, __) =>
-                                SmartTaskbarPopoverButton(
-                              isExpanded:
-                                  _activePopover == TaskbarPopoverType.battery,
-                              onTap: () =>
-                                  _togglePopover(TaskbarPopoverType.battery),
-                              onDismiss: () => setState(
-                                  () => _activePopover = TaskbarPopoverType.none),
                               compactChild: Row(
                                 children: [
-                                  const Icon(Icons.battery_charging_full,
-                                      color: Colors.greenAccent, size: 14),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "$battery%",
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold),
-                                  ),
+                                  _buildStackedNotificationIcons(notifs),
+                                  if (count > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        count > 9 ? "9+" : "$count",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
-                              expandedChild: const BatteryPopover(),
-                            ),
-                          ),
+                              expandedChild: NotificationFlyout(
+                                deviceState: widget.deviceState,
+                                onClose: () => setState(() =>
+                                    _activePopover = TaskbarPopoverType.none),
+                              ),
+                            );
+                          },
+                        ),
 
-                          const SizedBox(width: 6),
+                        const SizedBox(width: 6),
 
-                          // 3. Control Center Settings Island
-                          SmartTaskbarPopoverButton(
+                        // 2. Battery Island
+                        ValueListenableBuilder<int>(
+                          valueListenable: widget.deviceState.batteryPercentage,
+                          builder: (_, battery, __) =>
+                              SmartTaskbarPopoverButton(
                             isExpanded:
-                                _activePopover == TaskbarPopoverType.settings,
+                                _activePopover == TaskbarPopoverType.battery,
                             onTap: () =>
-                                _togglePopover(TaskbarPopoverType.settings),
+                                _togglePopover(TaskbarPopoverType.battery),
                             onDismiss: () => setState(
                                 () => _activePopover = TaskbarPopoverType.none),
-                            compactChild: const Icon(Icons.settings,
-                                color: Colors.white70, size: 18),
-                            expandedChild: const QuickSettingsPopover(),
+                            compactChild: Row(
+                              children: [
+                                const Icon(Icons.battery_charging_full,
+                                    color: Colors.greenAccent, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "$battery%",
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            expandedChild: const BatteryPopover(),
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        // 3. Control Center Settings Island
+                        SmartTaskbarPopoverButton(
+                          isExpanded:
+                              _activePopover == TaskbarPopoverType.settings,
+                          onTap: () =>
+                              _togglePopover(TaskbarPopoverType.settings),
+                          onDismiss: () => setState(
+                              () => _activePopover = TaskbarPopoverType.none),
+                          compactChild: const Icon(Icons.settings,
+                              color: Colors.white70, size: 18),
+                          expandedChild: QuickSettingsPopover(
+                            deviceState: widget.deviceState,
+                            onLockDex: () {
+                              setState(() {
+                                _activePopover = TaskbarPopoverType.none;
+                                _isDexLocked = true;
+                              });
+                            },
+                            onShutdown: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showPowerConfirmationDialog(context,
+                                  isShutdown: true);
+                            },
+                            onRestart: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showPowerConfirmationDialog(context,
+                                  isShutdown: false);
+                            },
+                            onRestartDexApp: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showRestartDexAppDialog(context);
+                            },
+                            onTakeScreenshot: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _takeScreenshot();
+                            },
+                            onOpenDeviceHealth: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showDeviceHealthDialog(context);
+                            },
+                            onOpenWirelessAdb: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showWirelessAdbDialog(context);
+                            },
+                            onShowSystemInfo: () {
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
+                              _showSystemInfoDialog(context);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
 
                     const SizedBox(width: 6),
                     // ZONE 4: Right Clock & Display Island
@@ -1123,9 +1180,411 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
               ],
             ),
           ),
+          if (_isDexLocked) _buildDexLockScreen(),
         ],
       ),
     );
+  }
+
+  void _showDeviceHealthDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: DeviceHealthPopover(
+          onClose: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+    );
+  }
+
+  void _showWirelessAdbDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => const WirelessAdbDialog(),
+    );
+  }
+
+  void _showRestartDexAppDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.refresh_rounded, color: Colors.cyanAccent, size: 24),
+            SizedBox(width: 10),
+            Text(
+              "Restart DEX Application",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18),
+            ),
+          ],
+        ),
+        content: const Text(
+          "Are you sure you want to restart the DEX Desktop Shell application process?",
+          style: TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                final String executable = Platform.resolvedExecutable;
+                final List<String> args = Platform.executableArguments;
+                await Process.start(executable, args,
+                    mode: ProcessStartMode.detached);
+                exit(0);
+              } catch (e) {
+                debugPrint("Restart app failed: $e");
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.cyanAccent,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Restart App",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPowerConfirmationDialog(BuildContext context,
+      {required bool isShutdown}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              isShutdown ? Icons.power_settings_new : Icons.restart_alt,
+              color: isShutdown ? Colors.redAccent : Colors.orangeAccent,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isShutdown ? "Shutdown DEX Device" : "Restart DEX Device",
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18),
+            ),
+          ],
+        ),
+        content: Text(
+          isShutdown
+              ? "Are you sure you want to power off the connected Android device?"
+              : "Are you sure you want to reboot the connected Android device?",
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final adbPath = await AdbDeviceScanner.getAdbPath();
+              if (isShutdown) {
+                await Process.run(adbPath, ['shell', 'reboot', '-p']);
+              } else {
+                await Process.run(adbPath, ['shell', 'reboot']);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isShutdown
+                        ? "Shutting down device..."
+                        : "Rebooting device..."),
+                    backgroundColor: const Color(0xFF1E293B),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isShutdown ? Colors.redAccent : Colors.orangeAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(isShutdown ? "Shutdown" : "Restart"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _takeScreenshot() async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final remotePath = '/sdcard/dex_screenshot_$timestamp.png';
+      await Process.run(adbPath, ['shell', 'screencap', '-p', remotePath]);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.camera_alt,
+                    color: Color(0xFF00BFA5), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child:
+                      Text("Screenshot saved: dex_screenshot_$timestamp.png"),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF0F172A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: Color(0xFF00BFA5)),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Screenshot failed: $e");
+    }
+  }
+
+  void _showSystemInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFF00BFA5), size: 24),
+            SizedBox(width: 10),
+            Text("System & Hardware Information",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSystemInfoRow("Device IP", widget.deviceState.deviceIp.value),
+            _buildSystemInfoRow("Battery Level",
+                "${widget.deviceState.batteryPercentage.value}%"),
+            _buildSystemInfoRow("DEX Environment", "Desktop Shell v2.5"),
+            _buildSystemInfoRow("ADB Reverse Port", "38947, 4567, 8080"),
+            _buildSystemInfoRow("Platform OS", "Linux x86_64"),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00BFA5),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Close",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSystemInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(value,
+              style: const TextStyle(
+                  color: Color(0xFF00BFA5),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDexLockScreen() {
+    final timeStr =
+        "${_now.hour % 12 == 0 ? 12 : _now.hour % 12}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')} ${_now.hour >= 12 ? 'PM' : 'AM'}";
+    final dateStr =
+        "${_getWeekdayName(_now.weekday)}, ${_getMonthName(_now.month)} ${_now.day}";
+
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Center(
+            child: Container(
+              width: 400,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: Colors.white12, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    blurRadius: 40,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00BFA5).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color:
+                              const Color(0xFF00BFA5).withValues(alpha: 0.4)),
+                    ),
+                    child: const Icon(Icons.lock_rounded,
+                        color: Color(0xFF00BFA5), size: 36),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    timeStr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    dateStr,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Color(0xFF00BFA5),
+                        child:
+                            Icon(Icons.person, color: Colors.black, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "GameT1 DEX User",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            "Session Locked",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isDexLocked = false;
+                      });
+                    },
+                    icon: const Icon(Icons.lock_open_rounded, size: 20),
+                    label: const Text(
+                      "Unlock DEX",
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00BFA5),
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getWeekdayName(int weekday) {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return days[(weekday - 1) % 7];
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ];
+    return months[(month - 1) % 12];
   }
 
   Widget _buildStackedNotificationIcons(List<RealNotificationItem> notifs) {
@@ -1444,11 +1903,42 @@ class _TaskbarMediaIslandState extends State<TaskbarMediaIsland> {
         : _buildCompactIsland(const RealMediaState());
   }
 
+  Widget _buildCompactArtwork(RealMediaState media) {
+    if (media.artworkBase64 != null && media.artworkBase64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(media.artworkBase64!);
+        return Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image.memory(bytes, fit: BoxFit.cover),
+          ),
+        );
+      } catch (_) {}
+    }
+    if (media.packageName.isNotEmpty) {
+      return SmartAppIconWidget(
+          packageName: media.packageName, size: 18, borderRadius: 9);
+    }
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.music_note_rounded,
+          color: Color(0xFF8B5CF6), size: 12),
+    );
+  }
+
   Widget _buildCompactIsland(RealMediaState media) {
     final bool isPlaying = media.isPlaying;
     final String title =
         media.title.isNotEmpty ? media.title : "Starlight Horizon";
-    final String pkg = media.packageName;
 
     return SmartTaskbarPopoverButton(
       isExpanded: widget.isExpanded,
@@ -1457,17 +1947,7 @@ class _TaskbarMediaIslandState extends State<TaskbarMediaIsland> {
       compactChild: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          pkg.isNotEmpty
-              ? SmartAppIconWidget(packageName: pkg, size: 18, borderRadius: 9)
-              : Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.music_note_rounded,
-                      color: Color(0xFF8B5CF6), size: 12),
-                ),
+          _buildCompactArtwork(media),
           const SizedBox(width: 6),
           SizedBox(
             width: 110,

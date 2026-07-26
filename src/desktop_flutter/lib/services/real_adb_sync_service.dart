@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'adb_device_scanner.dart';
 
@@ -353,6 +354,45 @@ class RealAdbSyncService {
   /// Fetch real active media session state from connected Android phone
   static Future<RealMediaState> fetchRealMediaState(
       {RealMediaState? currentState}) async {
+    // 1. Try fetching from Android Companion app HTTP route first
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(milliseconds: 400);
+      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media'));
+      final res = await req.close();
+      if (res.statusCode == 200) {
+        final bodyStr = await res.transform(utf8.decoder).join();
+        final json = jsonDecode(bodyStr) as Map<String, dynamic>;
+        client.close();
+
+        final title = json['title']?.toString() ?? '';
+        final artist = json['artist']?.toString() ?? '';
+        final album = json['album']?.toString() ?? '';
+        final pkg = json['package_name']?.toString() ?? '';
+        final isPlaying = json['is_playing'] == true;
+        final posMs = (json['position_ms'] as num?)?.toInt() ?? 0;
+        final durMs = (json['duration_ms'] as num?)?.toInt() ?? 0;
+        final artBase64 = json['artwork_base64']?.toString();
+        final artUrl = json['artwork_url']?.toString();
+
+        if (title.isNotEmpty && title != "No Active Media") {
+          return RealMediaState(
+            title: title,
+            artist: artist,
+            album: album,
+            packageName: pkg,
+            isPlaying: isPlaying,
+            positionMs: posMs,
+            durationMs:
+                durMs > 0 ? durMs : (currentState?.durationMs ?? 225000),
+            artworkBase64: artBase64 ?? currentState?.artworkBase64,
+            artworkUrl: artUrl ?? currentState?.artworkUrl,
+          );
+        }
+      }
+    } catch (_) {}
+
+    // 2. Robust ADB dumpsys media_session parsing
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
       final result = await Process.run(adbPath, [
@@ -378,6 +418,13 @@ class RealAdbSyncService {
           audioOutput.contains('isMusicActive()=true') ||
           audioOutput.contains('mIsMusicActive=true');
 
+      // Target active session block under 'Sessions Stack'
+      String targetOutput = output;
+      final stackIdx = output.indexOf('Sessions Stack');
+      if (stackIdx != -1) {
+        targetOutput = output.substring(stackIdx);
+      }
+
       String pkg = currentState?.packageName ?? '';
       String title = currentState?.title ?? '';
       String artist = currentState?.artist ?? '';
@@ -390,34 +437,25 @@ class RealAdbSyncService {
       String? artworkBase64 = currentState?.artworkBase64;
       String? artworkUrl = currentState?.artworkUrl;
 
-      final pkgMatch = RegExp(r'package=([^\s,]+)|Sessions Stack:\s*([^\s]+)')
-          .firstMatch(output);
+      // Match active package under Sessions Stack
+      final pkgMatch = RegExp(r'package=([^\s,]+)').firstMatch(targetOutput) ??
+          RegExp(r'pkg=([^\s,]+)').firstMatch(targetOutput);
       if (pkgMatch != null) {
-        final parsedPkg = (pkgMatch.group(1) ?? pkgMatch.group(2)) ?? '';
+        final parsedPkg = pkgMatch.group(1) ?? '';
         if (parsedPkg.isNotEmpty && parsedPkg != 'com.android.server.telecom') {
           pkg = parsedPkg;
         }
       }
 
-      // Parse position accurately from PlaybackState (avoiding buffered position)
-      final posMatch = RegExp(r'PlaybackState\s*\{[^}]*?\bposition=([0-9]+)')
-              .firstMatch(output) ??
-          RegExp(r'(?<!buffered\s)position=([0-9]+)').firstMatch(output);
-      if (posMatch != null) {
-        final parsedPos = int.tryParse(posMatch.group(1)!);
-        if (parsedPos != null && parsedPos > 0) {
-          positionMs = parsedPos;
-        }
-      }
-
-      // Parse MediaDescription title/artist/album
+      // Parse metadata description line: "description=Title, Artist, Album"
       final descMatch =
           RegExp(r'description=(.*?)(?=\n|\r|queueTitle=|\s{2,}|$)')
-              .firstMatch(output);
+              .firstMatch(targetOutput);
       if (descMatch != null) {
         final descStr = descMatch.group(1)?.trim() ?? '';
         if (descStr.isNotEmpty && descStr != 'null') {
-          final parts = descStr.split(RegExp(r'\s*[,\u2014\-]\s*'));
+          // Split specifically by ", " (comma space) as formatted by Android dumpsys
+          final parts = descStr.split(RegExp(r',\s+'));
           if (parts.isNotEmpty && parts[0].trim().isNotEmpty) {
             title = parts[0].trim();
           }
@@ -430,46 +468,67 @@ class RealAdbSyncService {
         }
       }
 
+      // Check explicit metadata fields if available
       final metadataTitle =
           RegExp(r'android\.media\.metadata\.TITLE=(.*?)(?=\n|\r|android\.)')
-              .firstMatch(output);
+              .firstMatch(targetOutput);
       if (metadataTitle != null) {
         final val =
             metadataTitle.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();
-        if (val != null && val.isNotEmpty) title = val;
+        if (val != null && val.isNotEmpty && val != 'null') title = val;
       }
 
-      final metadataArtist =
-          RegExp(r'android\.media\.metadata\.ARTIST=(.*?)(?=\n|\r|android\.)')
-              .firstMatch(output);
+      final metadataArtist = RegExp(
+                  r'android\.media\.metadata\.ARTIST=(.*?)(?=\n|\r|android\.)')
+              .firstMatch(targetOutput) ??
+          RegExp(r'android\.media\.metadata\.ALBUM_ARTIST=(.*?)(?=\n|\r|android\.)')
+              .firstMatch(targetOutput);
       if (metadataArtist != null) {
         final val = metadataArtist
             .group(1)
             ?.replaceAll(RegExp(r'^"|"|\s+$'), '')
             .trim();
-        if (val != null && val.isNotEmpty) artist = val;
+        if (val != null && val.isNotEmpty && val != 'null') artist = val;
       }
 
       final metadataAlbum =
           RegExp(r'android\.media\.metadata\.ALBUM=(.*?)(?=\n|\r|android\.)')
-              .firstMatch(output);
+              .firstMatch(targetOutput);
       if (metadataAlbum != null) {
         final val =
             metadataAlbum.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();
-        if (val != null && val.isNotEmpty) album = val;
+        if (val != null && val.isNotEmpty && val != 'null') album = val;
       }
 
       final durMatch = RegExp(r'android\.media\.metadata\.DURATION=([0-9]+)')
-              .firstMatch(output) ??
-          RegExp(r'\bduration=([0-9]+)').firstMatch(output);
+              .firstMatch(targetOutput) ??
+          RegExp(r'\bduration=([0-9]+)').firstMatch(targetOutput) ??
+          RegExp(r'durationMs=([0-9]+)').firstMatch(targetOutput);
       if (durMatch != null) {
         final parsedDur = int.tryParse(durMatch.group(1)!);
         if (parsedDur != null && parsedDur > 0) durationMs = parsedDur;
       }
 
+      // Parse position accurately from PlaybackState
+      final posMatch = RegExp(r'PlaybackState\s*\{[^}]*?\bposition=([0-9]+)')
+              .firstMatch(targetOutput) ??
+          RegExp(r'(?<!buffered\s)\bposition=([0-9]+)')
+              .firstMatch(targetOutput);
+      if (posMatch != null) {
+        final parsedPos = int.tryParse(posMatch.group(1)!);
+        if (parsedPos != null && parsedPos > 0) {
+          positionMs = parsedPos;
+        } else if (isPlaying && positionMs > 0) {
+          // If dumpsys returns 0 while playing, increment position naturally
+          positionMs += 1000;
+        }
+      } else if (isPlaying) {
+        positionMs += 1000;
+      }
+
       final artUriMatch = RegExp(
               r'android\.media\.metadata\.(?:ART_URI|ALBUM_ART_URI)=(.*?)(?=\n|\r|android\.)')
-          .firstMatch(output);
+          .firstMatch(targetOutput);
       if (artUriMatch != null) {
         final uri =
             artUriMatch.group(1)?.replaceAll(RegExp(r'^"|"|\s+$'), '').trim();

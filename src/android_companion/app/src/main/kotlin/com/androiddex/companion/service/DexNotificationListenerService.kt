@@ -27,6 +27,38 @@ class DexNotificationListenerService : NotificationListenerService() {
         instance = this
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent != null) {
+            val action = intent.getStringExtra("action") ?: intent.action
+            if (action == "cancel_all" || action == "com.androiddex.companion.CANCEL_ALL") {
+                cancelAll()
+            } else if (action == "cancel" || action == "com.androiddex.companion.CANCEL_PACKAGE") {
+                val pkg = intent.getStringExtra("pkg")
+                if (!pkg.isNullOrEmpty()) {
+                    cancelNotificationByPackage(pkg)
+                }
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    fun cancelAll() {
+        try {
+            cancelAllNotifications()
+        } catch (_: Exception) {}
+    }
+
+    fun cancelNotificationByPackage(pkgName: String) {
+        try {
+            val activeNotifs = activeNotifications ?: return
+            for (sbn in activeNotifs) {
+                if (sbn.packageName == pkgName) {
+                    cancelNotification(sbn.key)
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         // Broadcast notification posted event

@@ -69,22 +69,46 @@ class MediaSessionListener(
 
         val metadata = controller.metadata
         val playbackState = controller.playbackState
+        val description = metadata?.description
 
         val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
             ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
+            ?: description?.title?.toString()
             ?: "Dex Stream"
 
         val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
             ?: metadata?.getString(MediaMetadata.METADATA_KEY_AUTHOR)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE)
+            ?: description?.subtitle?.toString()
             ?: "Android Audio Engine"
 
-        val album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: ""
+        val album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM)
+            ?: description?.description?.toString()
+            ?: ""
+
         val durationMs = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 225000L
         val positionMs = playbackState?.position ?: 0L
         val isPlaying = playbackState?.state == PlaybackState.STATE_PLAYING
 
-        val artworkBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+        var artworkBitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+            ?: description?.iconBitmap
+
+        val artUriStr = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_ART_URI)
+            ?: description?.iconUri?.toString()
+
+        if (artworkBitmap == null && !artUriStr.isNullOrEmpty()) {
+            try {
+                val uri = android.net.Uri.parse(artUriStr)
+                val input = context.contentResolver.openInputStream(uri)
+                if (input != null) {
+                    artworkBitmap = android.graphics.BitmapFactory.decodeStream(input)
+                    input.close()
+                }
+            } catch (_: Exception) {}
+        }
 
         var artworkBase64: String? = null
         if (artworkBitmap != null) {
@@ -105,6 +129,9 @@ class MediaSessionListener(
             put("duration_ms", durationMs)
             if (artworkBase64 != null) {
                 put("artwork_base64", artworkBase64)
+            }
+            if (!artUriStr.isNullOrEmpty()) {
+                put("artwork_url", artUriStr)
             }
         }
 
