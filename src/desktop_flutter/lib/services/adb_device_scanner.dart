@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import '../models/device_state.dart';
 import 'real_adb_sync_service.dart';
+import 'pairing_service.dart';
 
 class RealDevice {
   final String serial;
@@ -248,11 +249,29 @@ class AdbDeviceScanner {
     }
   }
 
+  static DateTime _lastPairingHeartbeat = DateTime.fromMillisecondsSinceEpoch(0);
+
   /// Sync real device state (battery level, model, device serial)
   static Future<void> syncRealDeviceTelemetry(String serial, DeviceState state) async {
     final adbPath = await getAdbPath();
 
-    // 1. Fetch real device model
+    // 0. Enforce ADB port forwarding rule for Companion Server
+    try {
+      await Process.run(adbPath, ['-s', serial, 'forward', 'tcp:8080', 'tcp:8080']);
+    } catch (_) {}
+
+    // 1. Send Companion Heartbeat & Pairing ping every 4 seconds
+    final now = DateTime.now();
+    if (now.difference(_lastPairingHeartbeat).inSeconds >= 4) {
+      _lastPairingHeartbeat = now;
+      PairingService.requestPairing().catchError((_) => PairingResult(
+        status: 'FAILED',
+        deviceId: '',
+        computerName: '',
+      ));
+    }
+
+    // 2. Fetch real device model
     final modelRes = await Process.run(adbPath, ['-s', serial, 'shell', 'getprop', 'ro.product.model']);
     final realModel = modelRes.stdout.toString().trim();
     if (realModel.isNotEmpty) {

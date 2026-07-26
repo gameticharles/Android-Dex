@@ -55,12 +55,21 @@ class BootManager {
 
       // Step 5: Check & Deploy Companion APK if missing
       if (!isAppInstalled) {
-        onProgress(0.60, "Deploying Android Companion App APK...");
+        onProgress(0.60, "Companion app missing. Auto-deploying Companion APK (-g auto-grant permissions)...");
         const apkPath =
             '/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/build/outputs/apk/debug/app-debug.apk';
         if (await File(apkPath).exists()) {
-          await _runAdb(['install', '-r', apkPath]);
+          final res = await _runAdb(['install', '-g', '-r', apkPath]);
+          if (res.contains('Success')) {
+            onProgress(0.72, "Companion APK deployed & permissions granted ✓");
+          } else {
+            onProgress(0.72, "APK Deployment: ${res.trim()}");
+          }
+        } else {
+          onProgress(0.72, "Warning: Companion APK file not found at build path.");
         }
+      } else {
+        onProgress(0.72, "Android Companion App verified installed ✓");
       }
 
       onProgress(0.78, "Starting companion server service...");
@@ -141,8 +150,8 @@ class BootManager {
   }
 
   Future<bool> _isPackageInstalled(String pkg) async {
-    final out = await _runAdb(['shell', 'pm', 'list', 'packages', pkg]);
-    return out.contains(pkg);
+    final out = await _runAdb(['shell', 'pm', 'list', 'packages']);
+    return out.contains('package:$pkg') || out.contains(pkg);
   }
 
   Future<String> _runAdb(List<String> args) async {

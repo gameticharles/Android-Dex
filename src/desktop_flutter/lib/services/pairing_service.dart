@@ -16,9 +16,7 @@ class PairingResult {
   });
 }
 
-/**
- * Client service executing pairing protocol with Android Companion.
- */
+/// Client service executing pairing protocol with Android Companion.
 class PairingService {
   static Future<PairingResult> requestPairing() async {
     try {
@@ -27,7 +25,8 @@ class PairingService {
 
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 1000);
-      final req = await client.postUrl(Uri.parse('http://127.0.0.1:8080/pairing/request'));
+      final req = await client
+          .postUrl(Uri.parse('http://127.0.0.1:8080/pairing/request'));
       req.headers.set('content-type', 'application/json');
       req.add(utf8.encode(jsonEncode({
         'device_id': deviceId,
@@ -68,7 +67,8 @@ class PairingService {
 
       final client = HttpClient();
       client.connectionTimeout = const Duration(milliseconds: 800);
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/pairing/status?device_id=$deviceId'));
+      final req = await client.getUrl(Uri.parse(
+          'http://127.0.0.1:8080/pairing/status?device_id=$deviceId'));
       final res = await req.close();
       if (res.statusCode == 200) {
         final bodyStr = await res.transform(utf8.decoder).join();
