@@ -233,10 +233,14 @@ class AppLauncherService {
       }
       final localFile =
           File(path.join(cacheDir.path, '${app.packageName}.png'));
-      if (localFile.existsSync() && localFile.lengthSync() > 0) {
+      if (localFile.existsSync() && localFile.lengthSync() > 1200) {
         _iconCache[app.packageName] = localFile.path;
         app.iconUrl = localFile.path;
         initialSynced++;
+      } else if (localFile.existsSync()) {
+        try {
+          localFile.deleteSync();
+        } catch (_) {}
       }
     }
 
@@ -286,10 +290,14 @@ class AppLauncherService {
     try {
       final cacheDir = await _getCacheDirectory();
       final localFile = File(path.join(cacheDir.path, '$pkg.png'));
-      if (await localFile.exists() && (await localFile.length()) > 0) {
+      if (await localFile.exists() && (await localFile.length()) > 1200) {
         _iconCache[pkg] = localFile.path;
         iconCacheUpdateNotifier.value++;
         return localFile.path;
+      } else if (await localFile.exists()) {
+        try {
+          await localFile.delete();
+        } catch (_) {}
       }
     } catch (_) {}
 
