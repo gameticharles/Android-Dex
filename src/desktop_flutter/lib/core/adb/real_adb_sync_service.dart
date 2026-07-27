@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-import 'adb_device_scanner.dart';
-import 'desktop_identity_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/desktop_identity_service.dart';
 
 class RealSmsMessage {
   final String address;

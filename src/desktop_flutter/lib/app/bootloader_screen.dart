@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/adb_device_scanner.dart';
-import '../services/boot_diagnostic_service.dart';
-import 'wireless_adb_dialog.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/boot_diagnostic_service.dart';
+import 'package:adb_device_manager/features/wireless_adb/ui/wireless_adb_dialog.dart';
 
 class BootloaderScreen extends StatefulWidget {
   final DeviceState deviceState;
@@ -82,7 +82,8 @@ class _BootloaderScreenState extends State<BootloaderScreen>
 
           // Only trigger a full diagnostic rerun if we newly connected a device when none existed
           if (hadNoDevices && devices.isNotEmpty) {
-            _startDiagnosticRun(targetSerial: devices.first.serial, force: true);
+            _startDiagnosticRun(
+                targetSerial: devices.first.serial, force: true);
           }
         }
       }
@@ -495,7 +496,8 @@ class _BootloaderScreenState extends State<BootloaderScreen>
 
                                       return InkWell(
                                         onTap: () => _startDiagnosticRun(
-                                            targetSerial: dev.serial, force: true),
+                                            targetSerial: dev.serial,
+                                            force: true),
                                         borderRadius: BorderRadius.circular(12),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -670,7 +672,8 @@ class _BootloaderScreenState extends State<BootloaderScreen>
                                 const SizedBox(width: 12),
                                 OutlinedButton.icon(
                                   onPressed: () => _startDiagnosticRun(
-                                      targetSerial: _selectedSerial, force: true),
+                                      targetSerial: _selectedSerial,
+                                      force: true),
                                   icon: const Icon(Icons.refresh_rounded,
                                       size: 18),
                                   label: const Text("Re-run Diagnosis"),

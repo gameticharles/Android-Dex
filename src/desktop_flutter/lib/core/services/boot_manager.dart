@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:crypto/crypto.dart';
-import 'adb_device_scanner.dart';
-import 'pairing_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/features/wireless_adb/services/pairing_service.dart';
 
 /// Performance-Optimized Boot Manager with MD5 Hash Caching & Parallel Steps.
 class BootManager {

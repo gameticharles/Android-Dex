@@ -5,31 +5,31 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
-import '../models/device_state.dart';
-import '../services/app_launcher_service.dart';
-import '../services/clipboard_sync_service.dart';
-import '../services/mirror_service.dart';
-import '../services/real_adb_sync_service.dart';
-import '../services/call_state_service.dart';
-import 'app_drawer_dialog.dart';
-import 'app_mirror_stream_widget.dart';
-import 'battery_popover.dart';
-import 'device_health_popover.dart';
-import 'file_manager_dialog.dart';
-import 'incoming_call_banner.dart';
-import 'notification_flyout.dart';
-import 'media_player_widget.dart';
-import 'quick_settings_popover.dart';
-import 'smart_app_icon_widget.dart';
-import 'smart_taskbar_popover_button.dart';
-import 'sms_dialog.dart';
-import 'unified_phone_dialog.dart';
-import 'wireless_adb_dialog.dart';
-import 'dex_settings_dialog.dart';
-import '../services/dex_settings_service.dart';
-import '../services/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/features/app_mirror/services/app_launcher_service.dart';
+import 'package:adb_device_manager/core/services/clipboard_sync_service.dart';
+import 'package:adb_device_manager/features/app_mirror/services/mirror_service.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
+import 'package:adb_device_manager/features/phone/services/call_state_service.dart';
+import 'package:adb_device_manager/features/app_mirror/ui/app_drawer_dialog.dart';
+import 'package:adb_device_manager/features/app_mirror/ui/app_mirror_stream_widget.dart';
+import 'package:adb_device_manager/desktop/taskbar/battery_popover.dart';
+import 'package:adb_device_manager/desktop/control_center/device_health_popover.dart';
+import 'package:adb_device_manager/features/file_manager/ui/file_manager_dialog.dart';
+import 'package:adb_device_manager/features/phone/ui/incoming_call_banner.dart';
+import 'package:adb_device_manager/desktop/control_center/notification_flyout.dart';
+import 'package:adb_device_manager/features/media/ui/media_player_widget.dart';
+import 'package:adb_device_manager/desktop/control_center/quick_settings_popover.dart';
+import 'package:adb_device_manager/desktop/taskbar/smart_app_icon_widget.dart';
+import 'package:adb_device_manager/desktop/taskbar/smart_taskbar_popover_button.dart';
+import 'package:adb_device_manager/features/phone/ui/sms_dialog.dart';
+import 'package:adb_device_manager/features/phone/ui/unified_phone_dialog.dart';
+import 'package:adb_device_manager/features/wireless_adb/ui/wireless_adb_dialog.dart';
+import 'package:adb_device_manager/features/settings/ui/dex_settings_dialog.dart';
+import 'package:adb_device_manager/features/settings/services/dex_settings_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 
-import 'desktop_window_widget.dart';
+import 'package:adb_device_manager/desktop/window_manager/desktop_window_widget.dart';
 
 enum TaskbarPopoverType {
   none,
@@ -526,7 +526,8 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                     ),
                     if (cfg.darknessOverlay > 0)
                       Container(
-                        color: Colors.black.withValues(alpha: cfg.darknessOverlay),
+                        color:
+                            Colors.black.withValues(alpha: cfg.darknessOverlay),
                       ),
                   ],
                 );
@@ -1133,7 +1134,8 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                           expandedChild: QuickSettingsPopover(
                             deviceState: widget.deviceState,
                             onOpenFullSettings: () {
-                              setState(() => _activePopover = TaskbarPopoverType.none);
+                              setState(() =>
+                                  _activePopover = TaskbarPopoverType.none);
                               _showDexSettings(context);
                             },
                             onLockDex: () {
@@ -1639,13 +1641,17 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.phonelink_setup, color: Color(0xFF00BFA5), size: 18),
+                      const Icon(Icons.phonelink_setup,
+                          color: Color(0xFF00BFA5), size: 18),
                       const SizedBox(width: 8),
                       ValueListenableBuilder<String>(
                         valueListenable: widget.deviceState.deviceName,
                         builder: (_, name, __) => Text(
                           name,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
                       ),
                     ],
@@ -1653,14 +1659,18 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                   ValueListenableBuilder<String>(
                     valueListenable: widget.deviceState.connectionRoute,
                     builder: (_, route, __) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF00BFA5).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         route,
-                        style: const TextStyle(color: Color(0xFF00BFA5), fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: Color(0xFF00BFA5),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -1676,8 +1686,14 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Phone Battery", style: TextStyle(color: Colors.white70, fontSize: 11)),
-                            Text("$batteryPct%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                            const Text("Phone Battery",
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 11)),
+                            Text("$batteryPct%",
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11)),
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1686,7 +1702,9 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                           child: LinearProgressIndicator(
                             value: (batteryPct / 100.0).clamp(0.0, 1.0),
                             backgroundColor: Colors.white10,
-                            color: batteryPct > 20 ? const Color(0xFF10B981) : Colors.redAccent,
+                            color: batteryPct > 20
+                                ? const Color(0xFF10B981)
+                                : Colors.redAccent,
                             minHeight: 6,
                           ),
                         ),

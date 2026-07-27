@@ -1,9 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/pairing_service.dart';
-import '../services/desktop_identity_service.dart';
-import '../services/dex_settings_service.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/features/wireless_adb/services/pairing_service.dart';
+import 'package:adb_device_manager/core/services/desktop_identity_service.dart';
+import 'package:adb_device_manager/features/settings/services/dex_settings_service.dart';
 
 class DexSettingsDialog extends StatefulWidget {
   final bool isWindow;

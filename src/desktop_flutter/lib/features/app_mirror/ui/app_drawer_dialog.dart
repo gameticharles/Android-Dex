@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/app_launcher_service.dart';
-import 'smart_app_icon_widget.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/features/app_mirror/services/app_launcher_service.dart';
+import 'package:adb_device_manager/desktop/taskbar/smart_app_icon_widget.dart';
 
 class SystemAppItem {
   final String title;

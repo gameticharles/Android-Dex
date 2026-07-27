@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'smart_app_icon_widget.dart';
+import 'package:adb_device_manager/desktop/taskbar/smart_app_icon_widget.dart';
 
 class PhoneNotification {
   final String id;

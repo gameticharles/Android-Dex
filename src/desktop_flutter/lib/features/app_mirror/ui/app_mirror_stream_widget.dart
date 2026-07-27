@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/mirror_service.dart';
-import '../services/app_launcher_service.dart';
+import 'package:adb_device_manager/features/app_mirror/services/mirror_service.dart';
+import 'package:adb_device_manager/features/app_mirror/services/app_launcher_service.dart';
 
 class AppMirrorStreamWidget extends StatefulWidget {
   final String packageName;

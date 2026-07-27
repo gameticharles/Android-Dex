@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../services/real_adb_sync_service.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 /// Real-time state store for connected Android device.
 class DeviceState {

@@ -5,8 +5,8 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import '../models/device_state.dart';
-import 'real_adb_sync_service.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 class DesktopShelfServer {
   final DeviceState deviceState;

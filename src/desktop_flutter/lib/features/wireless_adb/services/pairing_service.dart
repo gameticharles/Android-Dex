@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'desktop_identity_service.dart';
+import 'package:adb_device_manager/core/services/desktop_identity_service.dart';
 
 class PairingResult {
   final String status; // "APPROVED", "PENDING", "REJECTED", "FAILED"

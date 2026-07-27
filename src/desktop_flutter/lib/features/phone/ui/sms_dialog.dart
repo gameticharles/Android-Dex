@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/real_adb_sync_service.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 class SmsDialog extends StatefulWidget {
   final bool isWindow;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/contacts_service.dart';
-import '../services/real_adb_sync_service.dart';
+import 'package:adb_device_manager/features/phone/services/contacts_service.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 class ContactsDialog extends StatefulWidget {
   final ContactsService contactsService;

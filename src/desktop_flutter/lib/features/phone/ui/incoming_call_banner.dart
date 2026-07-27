@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/call_state_service.dart';
+import 'package:adb_device_manager/features/phone/services/call_state_service.dart';
 
 class IncomingCallBanner extends StatelessWidget {
   const IncomingCallBanner({super.key});

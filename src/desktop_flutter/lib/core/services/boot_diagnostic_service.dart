@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import '../models/device_state.dart';
-import 'adb_device_scanner.dart';
-import 'boot_manager.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/boot_manager.dart';
 
 enum DiagnosticStatus { pending, running, passed, warning, failed }
 

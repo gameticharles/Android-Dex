@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'adb_device_scanner.dart';
-import 'dex_settings_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/features/settings/services/dex_settings_service.dart';
 
 /// Bi-directional Desktop <-> Android Phone Clipboard Sync Service
 class ClipboardSyncService {

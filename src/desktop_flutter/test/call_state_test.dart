@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:adb_device_manager/services/call_state_service.dart';
-import 'package:adb_device_manager/ui/incoming_call_banner.dart';
+import 'package:adb_device_manager/features/phone/services/call_state_service.dart';
+import 'package:adb_device_manager/features/phone/ui/incoming_call_banner.dart';
 
 void main() {
   testWidgets('IncomingCallBanner renders incoming call and active call states', (WidgetTester tester) async {

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import '../models/device_state.dart';
-import 'real_adb_sync_service.dart';
-import 'pairing_service.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
+import 'package:adb_device_manager/features/wireless_adb/services/pairing_service.dart';
 
 class RealDevice {
   final String serial;

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/adb_device_scanner.dart';
-import '../services/app_launcher_service.dart';
-import '../services/real_adb_sync_service.dart';
-import 'smart_app_icon_widget.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/features/app_mirror/services/app_launcher_service.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
+import 'package:adb_device_manager/desktop/taskbar/smart_app_icon_widget.dart';
 
-import 'device_health_popover.dart';
+import 'package:adb_device_manager/desktop/control_center/device_health_popover.dart';
 
 class NotificationFlyoutItem {
   final String category;

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../services/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 
 class BatteryInfo {
   final int level;

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math';
-import 'adb_device_scanner.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 
 enum FileCategory {
   directory,

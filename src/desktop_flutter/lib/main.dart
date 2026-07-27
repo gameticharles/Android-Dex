@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'models/device_state.dart';
-import 'services/adb_device_scanner.dart';
-import 'services/boot_manager.dart';
-import 'services/shelf_server.dart';
-import 'ui/bootloader_screen.dart';
-import 'ui/dex_desktop_shell.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/boot_manager.dart';
+import 'package:adb_device_manager/core/server/shelf_server.dart';
+import 'package:adb_device_manager/app/bootloader_screen.dart';
+import 'package:adb_device_manager/desktop/shell/dex_desktop_shell.dart';
 
-import 'services/dex_settings_service.dart';
+import 'package:adb_device_manager/features/settings/services/dex_settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 
 enum QuickSettingsSubPanel {
   main,

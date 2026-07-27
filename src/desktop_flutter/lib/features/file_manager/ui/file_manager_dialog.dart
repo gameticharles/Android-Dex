@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../services/file_manager_service.dart';
+import 'package:adb_device_manager/features/file_manager/services/file_manager_service.dart';
 
 class FileManagerDialog extends StatefulWidget {
   final bool isWindow;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:adb_device_manager/main.dart';
-import 'package:adb_device_manager/ui/bootloader_screen.dart';
+import 'package:adb_device_manager/app/bootloader_screen.dart';
 
 void main() {
   testWidgets('AdbDeviceManagerApp bootloader renders correctly', (WidgetTester tester) async {

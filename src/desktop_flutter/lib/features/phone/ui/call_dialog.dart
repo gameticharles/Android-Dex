@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../services/adb_device_scanner.dart';
-import '../services/real_adb_sync_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 class CallDialog extends StatefulWidget {
   const CallDialog({super.key});

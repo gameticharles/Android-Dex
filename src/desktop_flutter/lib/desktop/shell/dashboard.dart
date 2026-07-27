@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../models/device_state.dart';
-import '../services/contacts_service.dart';
-import 'contacts_dialog.dart';
-import 'media_player_widget.dart';
-import 'sms_dialog.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/features/phone/services/contacts_service.dart';
+import 'package:adb_device_manager/features/phone/ui/contacts_dialog.dart';
+import 'package:adb_device_manager/features/media/ui/media_player_widget.dart';
+import 'package:adb_device_manager/features/phone/ui/sms_dialog.dart';
 
 class DashboardScreen extends StatelessWidget {
   final DeviceState deviceState;

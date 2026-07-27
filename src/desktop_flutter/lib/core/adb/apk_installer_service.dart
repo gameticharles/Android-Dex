@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'adb_device_scanner.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 
 class ApkInstallerService {
   /// Sideload and install an APK file onto the connected Android device

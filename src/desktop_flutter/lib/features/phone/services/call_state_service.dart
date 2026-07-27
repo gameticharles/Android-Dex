@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'adb_device_scanner.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 import 'package:flutter/foundation.dart';
-import '../models/device_state.dart';
-import 'real_adb_sync_service.dart';
+import 'package:adb_device_manager/core/models/device_state.dart';
+import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 
 class CallStateData {
   final String state; // "IDLE", "RINGING", "ACTIVE"

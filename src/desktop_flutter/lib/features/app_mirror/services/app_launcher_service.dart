@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
-import 'adb_device_scanner.dart';
-import 'desktop_identity_service.dart';
+import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/desktop_identity_service.dart';
 
 class InstalledApp {
   final String packageName;
