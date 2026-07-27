@@ -89,7 +89,7 @@ class FileManagerService {
   static Future<StorageInfo?> getStorageInfo([String path = '/sdcard']) async {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      final result = await Process.run(adbPath, ['shell', 'df', '-h', path]);
+      final result = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'df', '-h', path]));
       final lines = result.stdout.toString().trim().split('\n');
 
       if (lines.length >= 2) {
@@ -119,7 +119,7 @@ class FileManagerService {
     final adbPath = await AdbDeviceScanner.getAdbPath();
 
     // First try ls -la for detailed list
-    final result = await Process.run(adbPath, ['shell', 'ls', '-la', remotePath]);
+    final result = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'ls', '-la', remotePath]));
     final stdout = result.stdout.toString();
     final lines = stdout.split('\n');
 
@@ -176,7 +176,7 @@ class FileManagerService {
 
     // Fallback if ls -la produced no items (e.g. restricted directory output)
     if (items.isEmpty) {
-      final fallbackResult = await Process.run(adbPath, ['shell', 'ls', '-1', '-F', remotePath]);
+      final fallbackResult = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'ls', '-1', '-F', remotePath]));
       final fbLines = fallbackResult.stdout.toString().split('\n');
       for (final line in fbLines) {
         final t = line.trim();
@@ -213,14 +213,14 @@ class FileManagerService {
   /// Create a new folder on the remote path
   static Future<bool> createDirectory(String remotePath) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final res = await Process.run(adbPath, ['shell', 'mkdir', '-p', remotePath]);
+    final res = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'mkdir', '-p', remotePath]));
     return res.exitCode == 0;
   }
 
   /// Delete a file or directory on the remote path
   static Future<bool> deleteItem(String remotePath) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final res = await Process.run(adbPath, ['shell', 'rm', '-rf', remotePath]);
+    final res = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'rm', '-rf', remotePath]));
     return res.exitCode == 0;
   }
 
@@ -236,7 +236,7 @@ class FileManagerService {
       final fileName = remotePath.split('/').last;
       final localPath = '${tempDir.path}/$fileName';
 
-      final res = await Process.run(adbPath, ['pull', remotePath, localPath]);
+      final res = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['pull', remotePath, localPath]));
       if (res.exitCode == 0 && await File(localPath).exists()) {
         return localPath;
       }
@@ -247,14 +247,14 @@ class FileManagerService {
   /// Push a local file from PC to Android phone
   static Future<bool> pushFile(String localPath, String remoteDir) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final res = await Process.run(adbPath, ['push', localPath, remoteDir]);
+    final res = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['push', localPath, remoteDir]));
     return res.exitCode == 0;
   }
 
   /// Pull a file from Android phone to PC
   static Future<bool> pullFile(String remotePath, String localDir) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final res = await Process.run(adbPath, ['pull', remotePath, localDir]);
+    final res = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['pull', remotePath, localDir]));
     return res.exitCode == 0;
   }
 }

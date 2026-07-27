@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'adb_device_scanner.dart';
 import 'package:flutter/foundation.dart';
 import '../models/device_state.dart';
 import 'real_adb_sync_service.dart';
@@ -183,10 +184,14 @@ class CallStateService {
 
     // 2. ADB Telecom / Keyevent Fallback
     try {
-      await Process.run(_adbPath, ['shell', 'telecom', 'accept-ringing-call']);
+      await Process.run(
+          _adbPath,
+          AdbDeviceScanner.getAdbArgs(
+              ['shell', 'telecom', 'accept-ringing-call']));
     } catch (_) {
       try {
-        await Process.run(_adbPath, ['shell', 'input', 'keyevent', '5']);
+        await Process.run(_adbPath,
+            AdbDeviceScanner.getAdbArgs(['shell', 'input', 'keyevent', '5']));
       } catch (_) {}
     }
 
@@ -220,10 +225,12 @@ class CallStateService {
 
     // 2. ADB Keyevent Fallback
     try {
-      await Process.run(_adbPath, ['shell', 'telecom', 'end-call']);
+      await Process.run(_adbPath,
+          AdbDeviceScanner.getAdbArgs(['shell', 'telecom', 'end-call']));
     } catch (_) {
       try {
-        await Process.run(_adbPath, ['shell', 'input', 'keyevent', '6']);
+        await Process.run(_adbPath,
+            AdbDeviceScanner.getAdbArgs(['shell', 'input', 'keyevent', '6']));
       } catch (_) {}
     }
 

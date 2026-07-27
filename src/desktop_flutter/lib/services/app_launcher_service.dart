@@ -146,8 +146,10 @@ class AppLauncherService {
     // ADB Fallback
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      final result =
-          await Process.run(adbPath, ['shell', 'pm', 'list', 'packages', '-3']);
+      final result = await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs(
+              ['shell', 'pm', 'list', 'packages', '-3']));
       final lines = result.stdout.toString().split('\n');
 
       final List<InstalledApp> apps = [];
@@ -386,7 +388,9 @@ class AppLauncherService {
 
       // 1. Locate APK path on device
       final pmResult = await Process.run(
-          adbPath, ['shell', 'pm', 'list', 'packages', '-f', pkg]);
+          adbPath,
+          AdbDeviceScanner.getAdbArgs(
+              ['shell', 'pm', 'list', 'packages', '-f', pkg]));
       final pmStdout = pmResult.stdout.toString();
 
       String? apkPath;
@@ -405,8 +409,8 @@ class AppLauncherService {
       if (apkPath == null || apkPath.isEmpty) return null;
 
       // 2. List PNG files inside APK archive via ADB shell unzip
-      final listResult =
-          await Process.run(adbPath, ['shell', 'unzip', '-l', apkPath]);
+      final listResult = await Process.run(adbPath,
+          AdbDeviceScanner.getAdbArgs(['shell', 'unzip', '-l', apkPath]));
       final listStdout = listResult.stdout.toString();
 
       String? bestIconPath;
@@ -452,7 +456,8 @@ class AppLauncherService {
       // 3. Extract raw binary PNG bytes via adb shell unzip -p
       final extractResult = await Process.run(
         adbPath,
-        ['shell', 'unzip', '-p', apkPath, bestIconPath],
+        AdbDeviceScanner.getAdbArgs(
+            ['shell', 'unzip', '-p', apkPath, bestIconPath]),
         stdoutEncoding: null,
       );
 
@@ -495,22 +500,26 @@ class AppLauncherService {
   /// Launch an app remotely on the connected Android device
   static Future<void> launchApp(String packageName) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    await Process.run(adbPath, [
-      'shell',
-      'monkey',
-      '-p',
-      packageName,
-      '-c',
-      'android.intent.category.LAUNCHER',
-      '1'
-    ]);
+    await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs([
+          'shell',
+          'monkey',
+          '-p',
+          packageName,
+          '-c',
+          'android.intent.category.LAUNCHER',
+          '1'
+        ]));
   }
 
   /// Trigger navigation actions
   static Future<void> sendKeyEvent(int keyCode) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
     await Process.run(
-        adbPath, ['shell', 'input', 'keyevent', keyCode.toString()]);
+        adbPath,
+        AdbDeviceScanner.getAdbArgs(
+            ['shell', 'input', 'keyevent', keyCode.toString()]));
   }
 
   /// Send touch tap event to connected Android device
@@ -518,7 +527,9 @@ class AppLauncherService {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
       await Process.run(
-          adbPath, ['shell', 'input', 'tap', x.toString(), y.toString()]);
+          adbPath,
+          AdbDeviceScanner.getAdbArgs(
+              ['shell', 'input', 'tap', x.toString(), y.toString()]));
     } catch (_) {}
   }
 
@@ -527,16 +538,18 @@ class AppLauncherService {
       [int durationMs = 300]) async {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      await Process.run(adbPath, [
-        'shell',
-        'input',
-        'swipe',
-        x1.toString(),
-        y1.toString(),
-        x2.toString(),
-        y2.toString(),
-        durationMs.toString(),
-      ]);
+      await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'input',
+            'swipe',
+            x1.toString(),
+            y1.toString(),
+            x2.toString(),
+            y2.toString(),
+            durationMs.toString(),
+          ]));
     } catch (_) {}
   }
 }

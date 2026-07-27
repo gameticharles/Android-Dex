@@ -98,7 +98,8 @@ class RealAdbSyncService {
                 ..connectionTimeout = const Duration(milliseconds: 400)
                 ..idleTimeout = Duration.zero;
               try {
-                final mReq = await mClient.getUrl(Uri.parse('http://127.0.0.1:8080/sms/messages?thread_id=$threadId'));
+                final mReq = await mClient.getUrl(Uri.parse(
+                    'http://127.0.0.1:8080/sms/messages?thread_id=$threadId'));
                 mReq.headers.set('Connection', 'close');
                 final mRes = await mReq.close();
                 if (mRes.statusCode == 200) {
@@ -116,7 +117,8 @@ class RealAdbSyncService {
                     }
                   }
                 }
-              } catch (_) {} finally {
+              } catch (_) {
+              } finally {
                 mClient.close(force: true);
               }
             }
@@ -124,7 +126,8 @@ class RealAdbSyncService {
           if (result.isNotEmpty) return result;
         }
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       client.close(force: true);
     }
 
@@ -132,7 +135,9 @@ class RealAdbSyncService {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
       final result = await Process.run(
-          adbPath, ['shell', 'content', 'query', '--uri', 'content://sms']);
+          adbPath,
+          AdbDeviceScanner.getAdbArgs(
+              ['shell', 'content', 'query', '--uri', 'content://sms']));
 
       final blocks = result.stdout.toString().split('Row: ');
       final List<RealSmsMessage> messages = [];
@@ -141,29 +146,42 @@ class RealAdbSyncService {
         if (block.trim().isEmpty) continue;
         final single = block.replaceAll('\n', ' ');
 
-        String address = 'Unknown';
         String body = '';
-        String date = '';
-        bool isSent = false;
+        String address = '';
+        String dateMs = '';
+        String type = '1';
+        String threadId = '0';
 
-        final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
-        if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? 'Unknown';
-
-        final bodyMatch = RegExp(
-                r'body=(.*?)(,\s*service_center=|\,\s*locked=|\,\s*date=|\s*$)')
-            .firstMatch(single);
+        final bodyMatch = RegExp(r'body=([^,]+)').firstMatch(single);
         if (bodyMatch != null) body = bodyMatch.group(1)?.trim() ?? '';
 
+        final addrMatch = RegExp(r'address=([^,]+)').firstMatch(single);
+        if (addrMatch != null) address = addrMatch.group(1)?.trim() ?? '';
+
         final dateMatch = RegExp(r'date=([0-9]+)').firstMatch(single);
-        if (dateMatch != null) date = dateMatch.group(1)?.trim() ?? '';
+        if (dateMatch != null) dateMs = dateMatch.group(1)?.trim() ?? '';
 
         final typeMatch = RegExp(r'type=([0-9]+)').firstMatch(single);
-        if (typeMatch != null && typeMatch.group(1) == '2') {
-          isSent = true;
-        }
+        if (typeMatch != null) type = typeMatch.group(1)?.trim() ?? '1';
 
-        if (body.isNotEmpty) {
-          messages.add(RealSmsMessage(address: address, body: body, date: date, isSent: isSent));
+        final threadMatch = RegExp(r'thread_id=([0-9]+)').firstMatch(single);
+        if (threadMatch != null) threadId = threadMatch.group(1)?.trim() ?? '0';
+
+        if (body.isNotEmpty && address.isNotEmpty) {
+          String formattedDate = "Today";
+          if (dateMs.isNotEmpty) {
+            final dt =
+                DateTime.fromMillisecondsSinceEpoch(int.tryParse(dateMs) ?? 0);
+            formattedDate =
+                "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+          }
+
+          messages.add(RealSmsMessage(
+            address: address,
+            body: body,
+            date: formattedDate,
+            isSent: type == '2',
+          ));
         }
       }
 
@@ -173,39 +191,48 @@ class RealAdbSyncService {
     }
   }
 
-  /// Send real SMS to recipient via Companion HTTP or ADB fallback
+  /// Send SMS message to recipient via Companion API or ADB fallback
   static Future<bool> sendSms(String recipient, String message) async {
-    if (recipient.trim().isEmpty || message.trim().isEmpty) return false;
     final client = HttpClient()
-      ..connectionTimeout = const Duration(milliseconds: 600)
+      ..connectionTimeout = const Duration(milliseconds: 1500)
       ..idleTimeout = Duration.zero;
+
     try {
-      final uri = Uri.parse('http://127.0.0.1:8080/sms/send').replace(
-          queryParameters: {'recipient': recipient.trim(), 'message': message.trim()});
+      final token = DesktopIdentityService.activeAuthToken;
+      final uri =
+          Uri.parse('http://127.0.0.1:8080/sms/send').replace(queryParameters: {
+        'to': recipient.trim(),
+        'message': message.trim(),
+      });
+
       final req = await client.getUrl(uri);
       req.headers.set('Connection', 'close');
+      if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       if (res.statusCode == 200) {
         return true;
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       client.close(force: true);
     }
 
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      await Process.run(adbPath, [
-        'shell',
-        'am',
-        'start',
-        '-a',
-        'android.intent.action.SENDTO',
-        '-d',
-        'sms:${recipient.trim()}',
-        '--es',
-        'sms_body',
-        message.trim(),
-      ]);
+      await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'am',
+            'start',
+            '-a',
+            'android.intent.action.SENDTO',
+            '-d',
+            'sms:${recipient.trim()}',
+            '--es',
+            'sms_body',
+            message.trim(),
+          ]));
       return true;
     } catch (_) {
       return false;
@@ -215,13 +242,15 @@ class RealAdbSyncService {
   /// Fetch real live Contacts from Android phone (2,300+ contacts)
   static Future<List<RealContactItem>> fetchRealContacts() async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
-    final result = await Process.run(adbPath, [
-      'shell',
-      'content',
-      'query',
-      '--uri',
-      'content://com.android.contacts/data/phones'
-    ]);
+    final result = await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs([
+          'shell',
+          'content',
+          'query',
+          '--uri',
+          'content://com.android.contacts/data/phones'
+        ]));
 
     final blocks = result.stdout.toString().split('Row: ');
     final List<RealContactItem> contacts = [];
@@ -281,8 +310,15 @@ class RealAdbSyncService {
     }
 
     // 2. Query call logs
-    final result = await Process.run(adbPath,
-        ['shell', 'content', 'query', '--uri', 'content://call_log/calls']);
+    final result = await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs([
+          'shell',
+          'content',
+          'query',
+          '--uri',
+          'content://call_log/calls'
+        ]));
 
     final blocks = result.stdout.toString().split('Row: ');
     final List<RealCallLogItem> calls = [];
@@ -351,12 +387,14 @@ class RealAdbSyncService {
   static Future<List<RealNotificationItem>> fetchRealNotifications() async {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      final result = await Process.run(adbPath, [
-        'shell',
-        'dumpsys',
-        'notification',
-        '--noredact',
-      ]);
+      final result = await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'dumpsys',
+            'notification',
+            '--noredact',
+          ]));
 
       final output = result.stdout.toString();
       final List<RealNotificationItem> items = [];
@@ -478,7 +516,8 @@ class RealAdbSyncService {
         final pkg = json['package_name']?.toString() ?? '';
         final isPlaying = json['is_playing'] == true;
         final posMs = (json['position_ms'] as num?)?.toInt() ?? 0;
-        final lastPosUpdate = (json['last_position_update_time'] as num?)?.toInt() ?? 0;
+        final lastPosUpdate =
+            (json['last_position_update_time'] as num?)?.toInt() ?? 0;
         final durMs = (json['duration_ms'] as num?)?.toInt() ?? 0;
         final artBase64 = json['artwork_base64']?.toString();
         final artUrl = json['artwork_url']?.toString();
@@ -501,26 +540,31 @@ class RealAdbSyncService {
           );
         }
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       client.close(force: true);
     }
 
     // 2. Robust ADB dumpsys media_session parsing
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      final result = await Process.run(adbPath, [
-        'shell',
-        'dumpsys',
-        'media_session',
-      ]);
+      final result = await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'dumpsys',
+            'media_session',
+          ]));
 
       final output = result.stdout.toString();
 
-      final audioResult = await Process.run(adbPath, [
-        'shell',
-        'dumpsys',
-        'audio',
-      ]);
+      final audioResult = await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'dumpsys',
+            'audio',
+          ]));
       final audioOutput = audioResult.stdout.toString();
 
       bool isPlaying = output.contains('state=PLAYING(3)') ||
@@ -694,25 +738,29 @@ class RealAdbSyncService {
       ..connectionTimeout = const Duration(milliseconds: 300)
       ..idleTimeout = Duration.zero;
     try {
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/seek?position_ms=$positionMs'));
+      final req = await client.getUrl(Uri.parse(
+          'http://127.0.0.1:8080/media/seek?position_ms=$positionMs'));
       req.headers.set('Connection', 'close');
       final token = DesktopIdentityService.activeAuthToken;
       if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       if (res.statusCode == 200) return;
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       client.close(force: true);
     }
 
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      await Process.run(adbPath, [
-        'shell',
-        'cmd',
-        'media_session',
-        'seek',
-        positionMs.toString(),
-      ]);
+      await Process.run(
+          adbPath,
+          AdbDeviceScanner.getAdbArgs([
+            'shell',
+            'cmd',
+            'media_session',
+            'seek',
+            positionMs.toString(),
+          ]));
     } catch (_) {}
   }
 
@@ -722,13 +770,15 @@ class RealAdbSyncService {
       ..connectionTimeout = const Duration(milliseconds: 300)
       ..idleTimeout = Duration.zero;
     try {
-      final req = await client.getUrl(Uri.parse('http://127.0.0.1:8080/media/control?cmd=$cmd'));
+      final req = await client
+          .getUrl(Uri.parse('http://127.0.0.1:8080/media/control?cmd=$cmd'));
       req.headers.set('Connection', 'close');
       final token = DesktopIdentityService.activeAuthToken;
       if (token != null) req.headers.set('X-Dex-Auth-Token', token);
       final res = await req.close();
       if (res.statusCode == 200) return;
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       client.close(force: true);
     }
   }
@@ -799,7 +849,8 @@ class RealMediaState {
       packageName: packageName ?? this.packageName,
       isPlaying: isPlaying ?? this.isPlaying,
       positionMs: positionMs ?? this.positionMs,
-      lastPositionUpdateTime: lastPositionUpdateTime ?? this.lastPositionUpdateTime,
+      lastPositionUpdateTime:
+          lastPositionUpdateTime ?? this.lastPositionUpdateTime,
       durationMs: durationMs ?? this.durationMs,
       artworkBase64: artworkBase64 ?? this.artworkBase64,
       artworkUrl: artworkUrl ?? this.artworkUrl,

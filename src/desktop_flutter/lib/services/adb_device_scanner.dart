@@ -39,6 +39,18 @@ class DiscoveredWirelessDevice {
 /// Service to detect and link real Android devices via ADB binary.
 class AdbDeviceScanner {
   static String? _adbExecutablePath;
+  static String? activeSerial;
+
+  /// Injects '-s <activeSerial>' into ADB command arguments when activeSerial is present.
+  static List<String> getAdbArgs(List<String> args) {
+    final s = activeSerial;
+    if (s != null && s.isNotEmpty) {
+      if (args.isEmpty || args[0] != '-s') {
+        return ['-s', s, ...args];
+      }
+    }
+    return args;
+  }
 
   /// Find ADB binary path (check bundled helper first, then system PATH)
   static Future<String> getAdbPath() async {
@@ -253,11 +265,14 @@ class AdbDeviceScanner {
 
   /// Sync real device state (battery level, model, device serial)
   static Future<void> syncRealDeviceTelemetry(String serial, DeviceState state) async {
+    activeSerial = serial;
     final adbPath = await getAdbPath();
 
-    // 0. Enforce ADB port forwarding rule for Companion Server
+    // 0. Enforce ADB port forwarding & reverse rules for Companion Server
     try {
       await Process.run(adbPath, ['-s', serial, 'forward', 'tcp:8080', 'tcp:8080']);
+      await Process.run(adbPath, ['-s', serial, 'reverse', 'tcp:38947', 'tcp:38947']);
+      await Process.run(adbPath, ['-s', serial, 'reverse', 'tcp:4567', 'tcp:4567']);
     } catch (_) {}
 
     // 1. Send Companion Heartbeat & Pairing ping every 4 seconds

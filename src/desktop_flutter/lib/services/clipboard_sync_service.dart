@@ -64,7 +64,7 @@ class ClipboardSyncService {
       // Sanitize text for shell input
       final sanitized = text.replaceAll(RegExp(r'[^a-zA-Z0-9\s._\-/@:]'), '');
       if (sanitized.isNotEmpty) {
-        await Process.run(adbPath, ['shell', 'input', 'text', sanitized]);
+        await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'input', 'text', sanitized]));
       }
     } catch (_) {}
   }
@@ -72,7 +72,7 @@ class ClipboardSyncService {
   static Future<String> _fetchPhoneClipboard() async {
     try {
       final adbPath = await AdbDeviceScanner.getAdbPath();
-      final result = await Process.run(adbPath, ['shell', 'cmd', 'clipboard', 'get']);
+      final result = await Process.run(adbPath, AdbDeviceScanner.getAdbArgs(['shell', 'cmd', 'clipboard', 'get']));
       return result.stdout.toString().trim();
     } catch (_) {
       return '';
