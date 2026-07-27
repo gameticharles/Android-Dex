@@ -5,7 +5,6 @@ import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
 import 'package:adb_device_manager/features/app_mirror/services/app_launcher_service.dart';
 import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 import 'package:adb_device_manager/desktop/taskbar/smart_app_icon_widget.dart';
-
 import 'package:adb_device_manager/desktop/control_center/device_health_popover.dart';
 
 class NotificationFlyoutItem {
@@ -38,9 +37,19 @@ class NotificationFlyout extends StatefulWidget {
 
 class _NotificationFlyoutState extends State<NotificationFlyout> {
   final Set<String> _dismissedKeys = {};
-  int _selectedTab = 0; // 0 = Notifications, 1 = Device Health
+  final Set<String> _mutedApps = {};
+  int _selectedTab = 0; // 0 = Live Notifications, 1 = Device Health
+  String _activeFilterCategory = "All";
+
   String? _replyingNotifId;
   final TextEditingController _replyController = TextEditingController();
+
+  final List<String> _cannedReplies = const [
+    "On my way! 🏃‍♂️",
+    "Thanks! 👍",
+    "Call you later 📞",
+    "Got it 👌",
+  ];
 
   String _getNotifKey(RealNotificationItem n) =>
       "${n.packageName}_${n.title}_${n.body}";
@@ -127,17 +136,15 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
   Widget _buildAppIconWidget(String pkg) {
     return SmartAppIconWidget(
       packageName: pkg,
-      size: 20,
-      borderRadius: 10,
+      size: 22,
+      borderRadius: 11,
     );
   }
 
   Future<void> _handleNotificationAction(
       RealNotificationItem item, String actText) async {
     final lowerAct = actText.toLowerCase();
-    final adbPath = await AdbDeviceScanner.getAdbPath();
 
-    // 1. Reply Action
     if (lowerAct.contains('reply') ||
         lowerAct.contains('message') ||
         lowerAct.contains('send')) {
@@ -152,77 +159,28 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
       return;
     }
 
-    // 2. Media Controls (Play, Pause, Next, Prev, Skip, Mute)
-    if (lowerAct.contains('play') || lowerAct.contains('pause')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '85']);
-      _showActionToast("Play/Pause toggled");
+    if (lowerAct.contains('mark as read') || lowerAct.contains('dismiss')) {
+      _dismissNotificationOnDevice(item);
       return;
     }
 
-    if (lowerAct.contains('next') || lowerAct.contains('skip')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '87']);
-      _showActionToast("Next track");
-      return;
-    }
-
-    if (lowerAct.contains('prev') || lowerAct.contains('back')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '88']);
-      _showActionToast("Previous track");
-      return;
-    }
-
-    if (lowerAct.contains('mute')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '164']);
-      _showActionToast("Volume Muted");
-      return;
-    }
-
-    // 3. Call Actions
-    if (lowerAct.contains('call') ||
-        lowerAct.contains('answer') ||
-        lowerAct.contains('accept')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '5']);
-      _showActionToast("Call connected");
-      return;
-    }
-
-    if (lowerAct.contains('decline') ||
-        lowerAct.contains('reject') ||
-        lowerAct.contains('hang')) {
-      await Process.run(adbPath, ['shell', 'input', 'keyevent', '6']);
-      setState(() => _dismissedKeys.add(_getNotifKey(item)));
-      _showActionToast("Call declined");
-      return;
-    }
-
-    // 4. Dismiss / Mark Read / Clear
-    if (lowerAct.contains('dismiss') ||
-        lowerAct.contains('mark as read') ||
-        lowerAct.contains('archive') ||
-        lowerAct.contains('clear')) {
-      await _dismissNotificationOnDevice(item);
-      _showActionToast("Notification dismissed");
-      return;
-    }
-
-    // 5. Default: Open App
-    _showActionToast("Opening ${item.appName}...");
     AppLauncherService.launchApp(item.packageName);
   }
 
-  Future<void> _sendNotificationReply(RealNotificationItem item) async {
-    final replyText = _replyController.text.trim();
-    if (replyText.isEmpty) return;
-
-    final adbPath = await AdbDeviceScanner.getAdbPath();
+  Future<void> _sendDirectReply(
+      RealNotificationItem item, String replyText) async {
+    if (replyText.trim().isEmpty) return;
+    final text = replyText.trim();
+    setState(() => _replyingNotifId = null);
 
     try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
       await Process.run(adbPath, [
         'shell',
         'am',
         'startservice',
         '-n',
-        'com.androiddex.companion/.InitializationService',
+        'com.androiddex.companion/.service.DexNotificationListenerService',
         '--es',
         'action',
         'reply',
@@ -230,528 +188,376 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
         'pkg',
         item.packageName,
         '--es',
-        'text',
-        replyText
+        'message',
+        text
       ]);
-    } catch (_) {}
-
-    _showActionToast("Reply sent to ${item.title}: \"$replyText\"");
-
-    setState(() {
-      _replyingNotifId = null;
-      _replyController.clear();
-      _dismissedKeys.add(_getNotifKey(item));
-    });
+    } catch (e) {
+      debugPrint("Direct reply error: $e");
+    }
   }
 
-  void _showActionToast(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline,
-                color: Color(0xFF00BFA5), size: 18),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF0F172A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: Color(0xFF00BFA5)),
-        ),
-      ),
-    );
-  }
+  bool _matchesCategoryFilter(RealNotificationItem item) {
+    if (_mutedApps.contains(item.packageName)) return false;
+    if (_activeFilterCategory == "All") return true;
 
-  IconData _getActionIcon(String actText) {
-    final lower = actText.toLowerCase();
-    if (lower.contains('reply') ||
-        lower.contains('message') ||
-        lower.contains('send')) {
-      return Icons.reply_rounded;
+    final pkg = item.packageName.toLowerCase();
+    final title = item.title.toLowerCase();
+
+    if (_activeFilterCategory == "Messages") {
+      return pkg.contains('whatsapp') ||
+          pkg.contains('sms') ||
+          pkg.contains('telecel') ||
+          pkg.contains('messaging') ||
+          pkg.contains('telegram');
     }
-    if (lower.contains('play')) return Icons.play_arrow_rounded;
-    if (lower.contains('pause')) return Icons.pause_rounded;
-    if (lower.contains('next') || lower.contains('skip')) {
-      return Icons.skip_next_rounded;
+    if (_activeFilterCategory == "Calls") {
+      return pkg.contains('phone') ||
+          pkg.contains('dialer') ||
+          title.contains('call');
     }
-    if (lower.contains('prev') || lower.contains('back')) {
-      return Icons.skip_previous_rounded;
+    if (_activeFilterCategory == "System") {
+      return pkg.contains('android') || pkg.contains('system');
     }
-    if (lower.contains('mute')) return Icons.volume_off_rounded;
-    if (lower.contains('call') ||
-        lower.contains('answer') ||
-        lower.contains('accept')) {
-      return Icons.call_rounded;
-    }
-    if (lower.contains('decline') ||
-        lower.contains('reject') ||
-        lower.contains('hang')) {
-      return Icons.call_end_rounded;
-    }
-    if (lower.contains('dismiss') ||
-        lower.contains('clear') ||
-        lower.contains('read') ||
-        lower.contains('archive')) {
-      return Icons.check_circle_outline_rounded;
-    }
-    return Icons.touch_app_rounded;
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 380,
-      height: 520,
+      constraints: const BoxConstraints(maxHeight: 600),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        color: const Color(0xFF1E1528).withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 25,
-            spreadRadius: 2,
+            color: Colors.black.withValues(alpha: 0.7),
+            blurRadius: 36,
+            spreadRadius: 6,
           )
         ],
       ),
-      child: widget.deviceState != null
-          ? ValueListenableBuilder<List<RealNotificationItem>>(
-              valueListenable: widget.deviceState!.notifications,
-              builder: (context, notifs, _) {
-                final activeNotifs = notifs
-                    .where((n) => !_dismissedKeys.contains(_getNotifKey(n)))
-                    .toList();
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row with Tab Toggle & Close Button
+          Row(
+            children: [
+              _buildTabButton(
+                  0, "Live Notifications", Icons.notifications_rounded),
+              const SizedBox(width: 8),
+              _buildTabButton(1, "Health", Icons.monitor_heart_rounded),
+              const Spacer(),
+              if (widget.onClose != null)
+                IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white70, size: 18),
+                  onPressed: widget.onClose,
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
 
-                for (final n in activeNotifs) {
-                  if (AppLauncherService.getCachedIconUrl(n.packageName) ==
-                      null) {
-                    AppLauncherService.getIconUrlForPackage(n.packageName);
-                  }
-                }
+          // Render Selected Tab View
+          Expanded(
+            child: _selectedTab == 1
+                ? DeviceHealthPopover(onClose: widget.onClose)
+                : _buildNotificationsTab(),
+          ),
+        ],
+      ),
+    );
+  }
 
-                return Column(
-                  children: [
-                    // Segmented Header Tab Switcher
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
+  Widget _buildTabButton(int index, String label, IconData icon) {
+    final isSelected = _selectedTab == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedTab = index),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00BFA5) : Colors.white10,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(icon,
+                color: isSelected ? Colors.black : Colors.white70, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.black : Colors.white70,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationsTab() {
+    return ValueListenableBuilder<List<RealNotificationItem>>(
+      valueListenable: widget.deviceState?.notifications ??
+          ValueNotifier<List<RealNotificationItem>>([]),
+      builder: (context, notifs, _) {
+        final activeNotifs = notifs
+            .where((n) =>
+                !_dismissedKeys.contains(_getNotifKey(n)) &&
+                _matchesCategoryFilter(n))
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Filter Chips Bar & Clear All Action
+            Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: const ["All", "Messages", "Calls", "System"]
+                          .map((cat) => _buildFilterChip(cat))
+                          .toList(),
+                    ),
+                  ),
+                ),
+                if (activeNotifs.isNotEmpty)
+                  TextButton(
+                    onPressed: () =>
+                        _clearAllNotificationsOnDevice(activeNotifs),
+                    child: const Text("Clear All",
+                        style:
+                            TextStyle(color: Colors.redAccent, fontSize: 11)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Active Notifications Scroll List
+            Expanded(
+              child: activeNotifs.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedTab = 0),
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: _selectedTab == 0
-                                      ? const Color(0xFF00BFA5)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.notifications_rounded,
-                                      size: 16,
-                                      color: _selectedTab == 0
-                                          ? Colors.white
-                                          : Colors.white54,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "Notifications",
-                                      style: TextStyle(
-                                        color: _selectedTab == 0
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    if (activeNotifs.isNotEmpty) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: _selectedTab == 0
-                                              ? Colors.black26
-                                              : const Color(0xFF00BFA5)
-                                                  .withValues(alpha: 0.3),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          "${activeNotifs.length}",
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedTab = 1),
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: _selectedTab == 1
-                                      ? const Color(0xFF00BFA5)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.shield_outlined,
-                                      size: 16,
-                                      color: _selectedTab == 1
-                                          ? Colors.white
-                                          : Colors.white54,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "Device Health",
-                                      style: TextStyle(
-                                        color: _selectedTab == 1
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          Icon(Icons.notifications_off_rounded,
+                              color: Colors.white24, size: 42),
+                          SizedBox(height: 8),
+                          Text(
+                            "No active notifications",
+                            style:
+                                TextStyle(color: Colors.white38, fontSize: 12),
                           ),
                         ],
                       ),
+                    )
+                  : ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: activeNotifs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final item = activeNotifs[index];
+                        return _buildNotificationCard(item);
+                      },
                     ),
-                    const SizedBox(height: 14),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-                    // Tab 0: Notifications View | Tab 1: Device Health View
-                    Expanded(
-                      child: _selectedTab == 1
-                          ? DeviceHealthPopover(
-                              onClose: widget.onClose,
-                            )
-                          : Column(
-                              children: [
-                                if (activeNotifs.isNotEmpty)
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            _clearAllNotificationsOnDevice(
-                                                activeNotifs),
-                                        child: const Text("Clear all",
-                                            style: TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: 12)),
-                                      ),
-                                    ],
-                                  ),
-                                Expanded(
-                                  child: activeNotifs.isEmpty
-                                      ? const Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                  Icons
-                                                      .notifications_off_outlined,
-                                                  color: Colors.white24,
-                                                  size: 48),
-                                              SizedBox(height: 12),
-                                              Text("No active notifications",
-                                                  style: TextStyle(
-                                                      color: Colors.white38,
-                                                      fontSize: 13)),
-                                            ],
-                                          ),
-                                        )
-                                      : ListView.builder(
-                                          itemCount: activeNotifs.length,
-                                          itemBuilder: (context, index) {
-                                            final item = activeNotifs[index];
-                                            final isReplying =
-                                                _replyingNotifId == item.id;
+  Widget _buildFilterChip(String category) {
+    final isSelected = _activeFilterCategory == category;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        selected: isSelected,
+        label: Text(
+          category,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white70,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white.withValues(alpha: 0.08),
+        selectedColor: const Color(0xFF00BFA5),
+        showCheckmark: false,
+        onSelected: (_) => setState(() => _activeFilterCategory = category),
+      ),
+    );
+  }
 
-                                            return Container(
-                                              margin: const EdgeInsets.only(
-                                                  bottom: 12),
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF1E293B)
-                                                    .withValues(alpha: 0.7),
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                    color: Colors.white10),
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      _buildAppIconWidget(
-                                                          item.packageName),
-                                                      const SizedBox(width: 8),
-                                                      Text(
-                                                        item.appName
-                                                            .toUpperCase(),
-                                                        style: const TextStyle(
-                                                            color:
-                                                                Colors.white70,
-                                                            fontSize: 11,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold),
-                                                      ),
-                                                      const Spacer(),
-                                                      Text(item.timestamp,
-                                                          style: const TextStyle(
-                                                              color: Colors
-                                                                  .white38,
-                                                              fontSize: 10)),
-                                                      const SizedBox(width: 6),
-                                                      InkWell(
-                                                        onTap: () =>
-                                                            _dismissNotificationOnDevice(
-                                                                item),
-                                                        child: const Icon(
-                                                            Icons.close_rounded,
-                                                            color:
-                                                                Colors.white38,
-                                                            size: 14),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    item.title,
-                                                    style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 13),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    item.body,
-                                                    style: const TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 11),
-                                                    maxLines: 3,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                  if (item
-                                                      .actions.isNotEmpty) ...[
-                                                    const SizedBox(height: 10),
-                                                    Wrap(
-                                                      spacing: 8,
-                                                      runSpacing: 6,
-                                                      children: item.actions
-                                                          .map((actText) {
-                                                        final iconData =
-                                                            _getActionIcon(
-                                                                actText);
+  Widget _buildNotificationCard(RealNotificationItem item) {
+    final isReplying = _replyingNotifId == item.id;
 
-                                                        return InkWell(
-                                                          onTap: () =>
-                                                              _handleNotificationAction(
-                                                                  item,
-                                                                  actText),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        10,
-                                                                    vertical:
-                                                                        6),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              color: const Color(
-                                                                      0xFF00BFA5)
-                                                                  .withValues(
-                                                                      alpha:
-                                                                          0.15),
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                              border: Border.all(
-                                                                  color: const Color(
-                                                                          0xFF00BFA5)
-                                                                      .withValues(
-                                                                          alpha:
-                                                                              0.4)),
-                                                            ),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                Icon(
-                                                                  iconData,
-                                                                  size: 13,
-                                                                  color: const Color(
-                                                                      0xFF00BFA5),
-                                                                ),
-                                                                const SizedBox(
-                                                                    width: 5),
-                                                                Text(
-                                                                  actText,
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    color: Color(
-                                                                        0xFF00BFA5),
-                                                                    fontSize:
-                                                                        11,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        );
-                                                      }).toList(),
-                                                    ),
-                                                  ],
-                                                  if (isReplying) ...[
-                                                    const SizedBox(height: 10),
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              6),
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(
-                                                            0xFF0F172A),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(14),
-                                                        border: Border.all(
-                                                            color: const Color(
-                                                                    0xFF00BFA5)
-                                                                .withValues(
-                                                                    alpha:
-                                                                        0.5)),
-                                                      ),
-                                                      child: Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: TextField(
-                                                              controller:
-                                                                  _replyController,
-                                                              autofocus: true,
-                                                              style: const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 12),
-                                                              decoration:
-                                                                  const InputDecoration(
-                                                                hintText:
-                                                                    "Type reply message...",
-                                                                hintStyle: TextStyle(
-                                                                    color: Colors
-                                                                        .white38,
-                                                                    fontSize:
-                                                                        12),
-                                                                border:
-                                                                    InputBorder
-                                                                        .none,
-                                                                isDense: true,
-                                                                contentPadding:
-                                                                    EdgeInsets.symmetric(
-                                                                        horizontal:
-                                                                            8,
-                                                                        vertical:
-                                                                            6),
-                                                              ),
-                                                              onSubmitted: (_) =>
-                                                                  _sendNotificationReply(
-                                                                      item),
-                                                            ),
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
-                                                                Icons
-                                                                    .send_rounded,
-                                                                color: Color(
-                                                                    0xFF00BFA5),
-                                                                size: 18),
-                                                            tooltip:
-                                                                "Send Reply",
-                                                            onPressed: () =>
-                                                                _sendNotificationReply(
-                                                                    item),
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
-                                                                Icons.close,
-                                                                color: Colors
-                                                                    .white38,
-                                                                size: 16),
-                                                            tooltip:
-                                                                "Cancel Reply",
-                                                            onPressed: () {
-                                                              setState(() {
-                                                                _replyingNotifId =
-                                                                    null;
-                                                                _replyController
-                                                                    .clear();
-                                                              });
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                ),
-                              ],
-                            ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // App Title Bar
+          Row(
+            children: [
+              _buildAppIconWidget(item.packageName),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.appName,
+                  style: const TextStyle(
+                    color: Color(0xFF00BFA5),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_off_outlined,
+                    color: Colors.white38, size: 14),
+                tooltip: "Mute app",
+                onPressed: () =>
+                    setState(() => _mutedApps.add(item.packageName)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    color: Colors.white38, size: 16),
+                onPressed: () => _dismissNotificationOnDevice(item),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // Message Title & Body
+          Text(
+            item.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            item.body,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+
+          // Notification Actions Buttons
+          if (item.actions.isNotEmpty)
+            Wrap(
+              spacing: 6,
+              children: item.actions.map((actText) {
+                return InkWell(
+                  onTap: () => _handleNotificationAction(item, actText),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                    child: Text(
+                      actText,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 );
-              },
-            )
-          : const SizedBox.shrink(),
+              }).toList(),
+            ),
+
+          // Direct Inline Reply Input Panel
+          if (isReplying) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _replyController,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: "Type reply...",
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onSubmitted: (text) => _sendDirectReply(item, text),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  icon: const Icon(Icons.send_rounded,
+                      color: Color(0xFF00BFA5), size: 20),
+                  onPressed: () =>
+                      _sendDirectReply(item, _replyController.text),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // Canned Reply Chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _cannedReplies.map((rText) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => _sendDirectReply(item, rText),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF00BFA5).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          rText,
+                          style: const TextStyle(
+                              color: Color(0xFF00BFA5), fontSize: 10),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -57,10 +57,10 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF111827).withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: const Color(0xFF1E1528).withValues(alpha: 0.95),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Container(
-        width: 550,
+        width: 540,
         height: 520,
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -76,7 +76,7 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                     Text(
                       "Live Notifications",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -88,22 +88,22 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                     TextButton(
                       onPressed: () => setState(() => _notifications.clear()),
                       child: const Text("Clear All",
-                          style: TextStyle(color: Colors.redAccent)),
+                          style: TextStyle(color: Colors.redAccent, fontSize: 12)),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.grey),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 16),
             Expanded(
               child: _notifications.isEmpty
                   ? const Center(
                       child: Text("No active notifications",
-                          style: TextStyle(color: Colors.grey)),
+                          style: TextStyle(color: Colors.white38)),
                     )
                   : ListView.builder(
                       itemCount: _notifications.length,
@@ -113,8 +113,8 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1F2937),
-                            borderRadius: BorderRadius.circular(14),
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.white10),
                           ),
                           child: Column(
@@ -124,8 +124,8 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                                 children: [
                                   SmartAppIconWidget(
                                     packageName: notif.packageName,
-                                    size: 20,
-                                    borderRadius: 10,
+                                    size: 22,
+                                    borderRadius: 11,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -133,30 +133,31 @@ class _NotificationCenterDialogState extends State<NotificationCenterDialog> {
                                     style: const TextStyle(
                                       color: Color(0xFF00BFA5),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                      fontSize: 12,
                                     ),
                                   ),
                                   const Spacer(),
                                   Text(
                                     notif.time,
                                     style: const TextStyle(
-                                        color: Colors.grey, fontSize: 11),
+                                        color: Colors.white38, fontSize: 10),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               Text(
                                 notif.title,
                                 style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 notif.message,
                                 style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12),
+                                    fontSize: 11, color: Colors.white70),
                               ),
                             ],
                           ),
