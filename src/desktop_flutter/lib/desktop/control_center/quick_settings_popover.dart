@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:adb_device_manager/core/models/device_state.dart';
 import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
+import 'package:adb_device_manager/core/services/dex_audio_routing_service.dart';
+import 'package:adb_device_manager/features/settings/services/dex_settings_service.dart';
 
 enum QuickSettingsSubPanel {
   main,
@@ -125,7 +127,39 @@ class _QuickSettingsPopoverState extends State<QuickSettingsPopover> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    final cfg = DexSettingsService.notifier.value;
+    _mediaVolume = cfg.mediaVolume;
+    _callVolume = cfg.callVolume;
+    _ringVolume = cfg.ringVolume;
+    _alarmVolume = cfg.alarmVolume;
+    _selectedMediaOutput =
+        DexAudioRoutingService.activeDestinationNotifier.value ==
+                DexAudioRoutingService.dexSpeaker
+            ? "Android Dex"
+            : "Android (system)";
+
+    DexAudioRoutingService.activeDestinationNotifier
+        .addListener(_onAudioDestChanged);
+  }
+
+  void _onAudioDestChanged() {
+    if (mounted) {
+      setState(() {
+        _selectedMediaOutput =
+            DexAudioRoutingService.activeDestinationNotifier.value ==
+                    DexAudioRoutingService.dexSpeaker
+                ? "Android Dex"
+                : "Android (system)";
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    DexAudioRoutingService.activeDestinationNotifier
+        .removeListener(_onAudioDestChanged);
     _pageController.dispose();
     super.dispose();
   }
@@ -756,15 +790,23 @@ class _QuickSettingsPopoverState extends State<QuickSettingsPopover> {
         _buildMediaDeviceTile(
           title: "Android (system)",
           isSelected: _selectedMediaOutput == "Android (system)",
-          onTap: () => setState(() => _selectedMediaOutput = "Android (system)"),
+          onTap: () {
+            setState(() => _selectedMediaOutput = "Android (system)");
+            DexAudioRoutingService.switchAudioDestination(
+                DexAudioRoutingService.androidSpeaker);
+          },
         ),
         const SizedBox(height: 10),
 
         // Device Option 2: Android Dex
         _buildMediaDeviceTile(
-          title: "Android Dex",
+          title: "Android Dex (Dex Speaker)",
           isSelected: _selectedMediaOutput == "Android Dex",
-          onTap: () => setState(() => _selectedMediaOutput = "Android Dex"),
+          onTap: () {
+            setState(() => _selectedMediaOutput = "Android Dex");
+            DexAudioRoutingService.switchAudioDestination(
+                DexAudioRoutingService.dexSpeaker);
+          },
         ),
         const SizedBox(height: 20),
 
@@ -834,7 +876,10 @@ class _QuickSettingsPopoverState extends State<QuickSettingsPopover> {
                 child: _PillSlider(
                   value: _appVolume,
                   icon: Icons.volume_up_rounded,
-                  onChanged: (v) => setState(() => _appVolume = v),
+                  onChanged: (v) {
+                    setState(() => _appVolume = v);
+                    DexAudioRoutingService.setStreamVolume(3, v);
+                  },
                 ),
               ),
             ],

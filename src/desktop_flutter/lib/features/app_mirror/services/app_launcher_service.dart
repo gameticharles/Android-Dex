@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
@@ -500,17 +501,12 @@ class AppLauncherService {
   /// Launch an app remotely on the connected Android device
   static Future<void> launchApp(String packageName) async {
     final adbPath = await AdbDeviceScanner.getAdbPath();
+    final script =
+        'input keyevent 224; wm dismiss-keyguard; ACT=\$(cmd package resolve-activity --brief $packageName | tail -n 1); if [ -n "\$ACT" ] && [ "\$ACT" != "No activity found" ]; then am start -n "\$ACT" -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -f 0x10200000; else monkey -p $packageName -c android.intent.category.LAUNCHER 1; fi';
     await Process.run(
-        adbPath,
-        AdbDeviceScanner.getAdbArgs([
-          'shell',
-          'monkey',
-          '-p',
-          packageName,
-          '-c',
-          'android.intent.category.LAUNCHER',
-          '1'
-        ]));
+      adbPath,
+      AdbDeviceScanner.getAdbArgs(['shell', script]),
+    );
   }
 
   /// Trigger navigation actions
@@ -550,6 +546,58 @@ class AppLauncherService {
             y2.toString(),
             durationMs.toString(),
           ]));
+    } catch (_) {}
+  }
+
+  /// Capture raw live PNG frame bytes directly from the connected Android screen
+  static Future<Uint8List?> captureScreenFrame() async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final result = await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs(['exec-out', 'screencap', '-p']),
+        stdoutEncoding: null,
+      );
+      if (result.exitCode == 0 && result.stdout is List<int>) {
+        final bytes = Uint8List.fromList(result.stdout as List<int>);
+        if (bytes.isNotEmpty) {
+          return bytes;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Get actual physical screen size of connected Android device
+  static Future<Size> getDeviceDisplaySize() async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final result = await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs(['shell', 'wm', 'size']),
+      );
+      if (result.exitCode == 0 && result.stdout is String) {
+        final match =
+            RegExp(r'(\d+)x(\d+)').firstMatch(result.stdout as String);
+        if (match != null) {
+          final w = double.tryParse(match.group(1) ?? '1080') ?? 1080.0;
+          final h = double.tryParse(match.group(2) ?? '2400') ?? 2400.0;
+          return Size(w, h);
+        }
+      }
+    } catch (_) {}
+    return const Size(1080, 2400);
+  }
+
+  /// Send text input to currently focused element on device
+  static Future<void> sendInputText(String text) async {
+    try {
+      final adbPath = await AdbDeviceScanner.getAdbPath();
+      final escaped = text.replaceAll(' ', '%s').replaceAll("'", "\\'");
+      await Process.run(
+        adbPath,
+        AdbDeviceScanner.getAdbArgs(['shell', 'input', 'text', escaped]),
+      );
     } catch (_) {}
   }
 }

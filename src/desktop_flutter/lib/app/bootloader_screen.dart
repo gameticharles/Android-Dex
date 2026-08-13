@@ -33,7 +33,7 @@ class _BootloaderScreenState extends State<BootloaderScreen>
   bool _isDiagnosticFinished = false;
   bool _isDiagnosticRunning = false;
   Timer? _hotplugTimer;
-  bool _isAutoDetecting = true;
+  final bool _isAutoDetecting = true;
   String _previousDeviceCountHash = '';
 
   @override

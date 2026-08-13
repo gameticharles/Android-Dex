@@ -1,11 +1,16 @@
 package com.androiddex.companion.service
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Icon
 import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 
 /**
  * Real-Time Notification Listener Bridge for Android Dex
@@ -61,12 +66,22 @@ class DexNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        // Broadcast notification posted event
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        // Broadcast notification removed event
+    }
+
+    private fun bitmapToBase64(bitmap: Bitmap?): String? {
+        if (bitmap == null) return null
+        return try {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, stream)
+            val byteArray = stream.toByteArray()
+            "data:image/jpeg;base64," + Base64.encodeToString(byteArray, Base64.NO_WRAP)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun getActiveNotificationsJson(): JSONArray {
@@ -80,8 +95,30 @@ class DexNotificationListenerService : NotificationListenerService() {
             }
 
             val extras = sbn.notification.extras
-            val title = extras?.getString("android.title") ?: ""
+            val title = extras?.getCharSequence("android.title")?.toString() ?: ""
             val text = extras?.getCharSequence("android.text")?.toString() ?: ""
+            val subText = extras?.getCharSequence("android.subText")?.toString() ?: ""
+
+            // Extract picture attachment (if any)
+            val pictureBitmap = extras?.get("android.picture") as? Bitmap
+            val pictureBase64 = bitmapToBase64(pictureBitmap)
+
+            // Extract large icon / avatar (if any)
+            val largeIconObj = extras?.get("android.largeIcon")
+            val largeIconBitmap = when (largeIconObj) {
+                is Bitmap -> largeIconObj
+                is Icon -> (largeIconObj.loadDrawable(this) as? BitmapDrawable)?.bitmap
+                else -> null
+            }
+            val largeIconBase64 = bitmapToBase64(largeIconBitmap)
+
+            // Extract notification action buttons
+            val actionsArray = JSONArray()
+            sbn.notification.actions?.forEach { act ->
+                if (!act.title.isNullOrEmpty()) {
+                    actionsArray.put(act.title.toString())
+                }
+            }
 
             if (title.isNotEmpty() || text.isNotEmpty()) {
                 val notifObj = JSONObject().apply {
@@ -89,7 +126,11 @@ class DexNotificationListenerService : NotificationListenerService() {
                     put("package_name", pkg)
                     put("title", title)
                     put("body", text)
-                    put("app_name", pkg.substringAfterLast('.').capitalize())
+                    put("sub_text", subText)
+                    put("app_name", pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() })
+                    put("image_data", pictureBase64 ?: "")
+                    put("large_icon_data", largeIconBase64 ?: "")
+                    put("actions", actionsArray)
                 }
                 array.put(notifObj)
             }

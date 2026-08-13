@@ -26,13 +26,13 @@ class TcpCommandBatcher {
 
     if (_queue.length == 1) {
       // Single command
-      socket.write(jsonEncode(_queue.first) + '\n');
+      socket.write('${jsonEncode(_queue.first)}\n');
     } else {
       // Batch payload
-      socket.write(jsonEncode({
-        'type': 'batch',
-        'commands': List.from(_queue),
-      }) + '\n');
+      socket.write('${jsonEncode({
+            'type': 'batch',
+            'commands': List.from(_queue),
+          })}\n');
     }
 
     _queue.clear();

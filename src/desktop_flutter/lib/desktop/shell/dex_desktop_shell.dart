@@ -12,7 +12,6 @@ import 'package:adb_device_manager/features/app_mirror/services/mirror_service.d
 import 'package:adb_device_manager/core/adb/real_adb_sync_service.dart';
 import 'package:adb_device_manager/features/phone/services/call_state_service.dart';
 import 'package:adb_device_manager/features/app_mirror/ui/app_drawer_dialog.dart';
-import 'package:adb_device_manager/features/app_mirror/ui/app_mirror_stream_widget.dart';
 import 'package:adb_device_manager/desktop/taskbar/battery_popover.dart';
 import 'package:adb_device_manager/desktop/control_center/device_health_popover.dart';
 import 'package:adb_device_manager/features/file_manager/ui/file_manager_dialog.dart';
@@ -416,18 +415,8 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
   }
 
   void _launchAppMirrorWindow(String packageName, String appName) {
-    final winId = 'app_${packageName}_${DateTime.now().millisecondsSinceEpoch}';
-    openDesktopWindow(
-      id: winId,
-      title: appName,
-      icon: Icons.screen_share_rounded,
-      themeColor: const Color(0xFF3B82F6),
-      content: AppMirrorStreamWidget(
-        packageName: packageName,
-        title: appName,
-      ),
-      defaultSize: const Size(420, 720),
-    );
+    // Launch native virtual display app instance with hardware-accelerated rendering & auto-resizing
+    MirrorService.launchAppMirror(packageName, appName);
   }
 
   void _showAppDrawer(BuildContext context) {
@@ -507,23 +496,42 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                 return Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      cfg.wallpaperUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/home_page/bg_set_test_1.jpg',
+                    if (cfg.isCustomWallpaper && !cfg.wallpaperUrl.startsWith('http'))
+                      Image.file(
+                        File(cfg.wallpaperUrl),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/home_page/bg_set_test_1.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Image.network(
+                        cfg.wallpaperUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/home_page/bg_set_test_1.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
                     if (cfg.darknessOverlay > 0)
                       Container(
                         color:
@@ -564,8 +572,14 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                               icon: Icons.screen_share,
                               label: "Mirroring",
                               color: const Color(0xFF3B82F6),
-                              onTap: () =>
-                                  MirrorService.launchScreenMirroring(),
+                              onTap: () {
+                                final cfg = DexSettingsService.notifier.value;
+                                if (cfg.appOpeningMode == 'Scrcpy standalone') {
+                                  MirrorService.launchScreenMirroring();
+                                } else {
+                                  _launchAppMirrorWindow('com.android.systemui', 'Phone Screen Mirror');
+                                }
+                              },
                             ),
                             _buildDesktopShortcut(
                               icon: Icons.folder_special,
@@ -1081,6 +1095,8 @@ class _DexDesktopShellState extends State<DexDesktopShell> {
                               ),
                               expandedChild: NotificationFlyout(
                                 deviceState: widget.deviceState,
+                                onLaunchAppWindow: (pkg, name) =>
+                                    _launchAppMirrorWindow(pkg, name),
                                 onClose: () => setState(() =>
                                     _activePopover = TaskbarPopoverType.none),
                               ),

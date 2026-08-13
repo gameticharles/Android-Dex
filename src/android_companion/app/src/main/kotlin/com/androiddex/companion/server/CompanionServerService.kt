@@ -75,10 +75,10 @@ class CompanionServerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Android Dex Companion Server",
+                "Android DEX Companion Server",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows live connection status for Android Dex Companion"
+                description = "Shows live connection status for Android DEX Companion"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -122,10 +122,10 @@ class CompanionServerService : Service() {
         val title: String
         val text: String
         if (isConnected) {
-            title = "Android Dex Companion"
+            title = "Android DEX"
             text = "Connected to $activeComputerName ($lastClientIp) • Streaming"
         } else {
-            title = "Android Dex Companion"
+            title = "Android DEX"
             text = "Service active on port 8080 • Ready to stream"
         }
 

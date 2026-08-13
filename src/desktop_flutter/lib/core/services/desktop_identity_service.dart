@@ -5,10 +5,7 @@ import 'dart:math';
 class DesktopIdentityService {
   static String? _cachedId;
   static String? _cachedHostname;
-  static String? _activeAuthToken;
-
-  static String? get activeAuthToken => _activeAuthToken;
-  static set activeAuthToken(String? token) => _activeAuthToken = token;
+  static String? activeAuthToken;
   static String? get cachedId => _cachedId;
 
   static Future<String> getDeviceId() async {

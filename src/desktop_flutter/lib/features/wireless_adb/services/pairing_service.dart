@@ -16,9 +16,7 @@ class PairingResult {
   });
 }
 
-/**
- * Client service executing pairing protocol with Android Companion.
- */
+/// Client service executing pairing protocol with Android Companion.
 class PairingService {
   static Future<PairingResult> requestPairing() async {
     final deviceId = await DesktopIdentityService.getDeviceId();

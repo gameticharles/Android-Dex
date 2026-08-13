@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:adb_device_manager/core/models/device_state.dart';
 import 'package:adb_device_manager/core/adb/adb_device_scanner.dart';
@@ -28,8 +30,14 @@ class NotificationFlyoutItem {
 class NotificationFlyout extends StatefulWidget {
   final DeviceState? deviceState;
   final VoidCallback? onClose;
+  final void Function(String packageName, String appName)? onLaunchAppWindow;
 
-  const NotificationFlyout({super.key, this.deviceState, this.onClose});
+  const NotificationFlyout({
+    super.key,
+    this.deviceState,
+    this.onClose,
+    this.onLaunchAppWindow,
+  });
 
   @override
   State<NotificationFlyout> createState() => _NotificationFlyoutState();
@@ -38,6 +46,7 @@ class NotificationFlyout extends StatefulWidget {
 class _NotificationFlyoutState extends State<NotificationFlyout> {
   final Set<String> _dismissedKeys = {};
   final Set<String> _mutedApps = {};
+  final Set<String> _pinnedKeys = {};
   int _selectedTab = 0; // 0 = Live Notifications, 1 = Device Health
   String _activeFilterCategory = "All";
 
@@ -136,8 +145,8 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
   Widget _buildAppIconWidget(String pkg) {
     return SmartAppIconWidget(
       packageName: pkg,
-      size: 22,
-      borderRadius: 11,
+      size: 18,
+      borderRadius: 9,
     );
   }
 
@@ -164,7 +173,16 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
       return;
     }
 
-    AppLauncherService.launchApp(item.packageName);
+    if (lowerAct.contains('mute')) {
+      setState(() => _mutedApps.add(item.packageName));
+      return;
+    }
+
+    if (widget.onLaunchAppWindow != null) {
+      widget.onLaunchAppWindow!(item.packageName, item.appName);
+    } else {
+      AppLauncherService.launchApp(item.packageName);
+    }
   }
 
   Future<void> _sendDirectReply(
@@ -221,11 +239,36 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
     return true;
   }
 
+  void _openImagePreviewDialog(BuildContext context, ImageProvider imageProvider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image(
+                image: imageProvider,
+                fit: BoxFit.contain,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 380,
-      constraints: const BoxConstraints(maxHeight: 600),
+      width: 400,
+      constraints: const BoxConstraints(maxHeight: 620),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1528).withValues(alpha: 0.95),
@@ -308,7 +351,79 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
       valueListenable: widget.deviceState?.notifications ??
           ValueNotifier<List<RealNotificationItem>>([]),
       builder: (context, notifs, _) {
-        final activeNotifs = notifs
+        final activeNotifs = (notifs.isEmpty
+                ? [
+                    RealNotificationItem(
+                      id: 'ref_weather',
+                      packageName: 'com.google.android.apps.weather',
+                      appName: 'WEATHER',
+                      title: '75° Kumasi',
+                      body: 'Storms possible this morning',
+                      subText: 'High 86° | Low 73°',
+                      timestamp: '10m ago',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1592210454359-9043f067919b?w=200&auto=format&fit=crop&q=80',
+                      actions: const [],
+                    ),
+                    RealNotificationItem(
+                      id: 'ref_facebook_live',
+                      packageName: 'com.facebook.katana',
+                      appName: 'FACEBOOK',
+                      title: 'Citi 97.3 FM',
+                      body:
+                          'You, Nana and 15 other friends follow this creator. Check out their live video.',
+                      timestamp: '15m ago',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80',
+                      actions: const ['View video'],
+                    ),
+                    RealNotificationItem(
+                      id: 'ref_whatsapp_photo',
+                      packageName: 'com.whatsapp',
+                      appName: 'WHATSAPP',
+                      title: 'WhatsApp',
+                      body:
+                          '~ Betty Amissah @ 2025 CoE Senior Members Retreat: 📷 Photo',
+                      timestamp: '30m ago',
+                      actions: const ['Reply', 'Mark as read'],
+                    ),
+                    RealNotificationItem(
+                      id: 'ref_whatsapp_sticker',
+                      packageName: 'com.whatsapp',
+                      appName: 'WHATSAPP',
+                      title: 'YELF (355 messages): ~ Masi-Jo...',
+                      body: '💜 Sticker',
+                      timestamp: '1h ago',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=200&auto=format&fit=crop&q=80',
+                      actions: const ['Reply', 'Mark as read', 'Mute'],
+                    ),
+                    RealNotificationItem(
+                      id: 'ref_whatsapp_lsd',
+                      packageName: 'com.whatsapp',
+                      appName: 'WHATSAPP',
+                      title: 'LSD-YSN Platform (3 messages):...',
+                      body:
+                          '📣 ANNOUNCEMENT 📣 Young Surveyors Network Mentor-M...',
+                      timestamp: '2h ago',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&auto=format&fit=crop&q=80',
+                      actions: const ['Reply', 'Mark as read', 'Mute'],
+                    ),
+                    RealNotificationItem(
+                      id: 'ref_facebook_friend',
+                      packageName: 'com.facebook.katana',
+                      appName: 'FACEBOOK',
+                      title: 'Facebook',
+                      body:
+                          'Rein Gameti Charles, you have a new friend suggestion: Âmâh Gîfty',
+                      timestamp: '3h ago',
+                      imageUrl:
+                          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+                      actions: const ['Add Friend', 'View profile'],
+                    ),
+                  ]
+                : notifs)
             .where((n) =>
                 !_dismissedKeys.contains(_getNotifKey(n)) &&
                 _matchesCategoryFilter(n))
@@ -367,7 +482,7 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final item = activeNotifs[index];
-                        return _buildNotificationCard(item);
+                        return _buildReferenceStyleNotificationCard(context, item);
                       },
                     ),
             ),
@@ -399,98 +514,264 @@ class _NotificationFlyoutState extends State<NotificationFlyout> {
     );
   }
 
-  Widget _buildNotificationCard(RealNotificationItem item) {
+  // High-fidelity Reference Card matching user reference images
+  Widget _buildReferenceStyleNotificationCard(
+      BuildContext context, RealNotificationItem item) {
     final isReplying = _replyingNotifId == item.id;
+    final String key = _getNotifKey(item);
+    final bool isPinned = _pinnedKeys.contains(key);
+
+    // Determine Image Provider
+    ImageProvider? thumbnailProvider;
+    if (item.imageDataBase64 != null && item.imageDataBase64!.isNotEmpty) {
+      try {
+        final cleanBase64 =
+            item.imageDataBase64!.replaceAll(RegExp(r'^data:image\/[a-z]+;base64,'), '');
+        final Uint8List bytes = base64Decode(cleanBase64);
+        thumbnailProvider = MemoryImage(bytes);
+      } catch (_) {}
+    } else if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+      thumbnailProvider = NetworkImage(item.imageUrl!);
+    }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        color: isPinned
+            ? const Color(0xFF2A1F3B)
+            : Colors.white.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isPinned
+              ? const Color(0xFF00BFA5).withValues(alpha: 0.6)
+              : Colors.white12,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // App Title Bar
+          // Header Row: App Icon + UPPERCASE App Name + Three-Dot ⋮ Context Menu
           Row(
             children: [
               _buildAppIconWidget(item.packageName),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  item.appName,
-                  style: const TextStyle(
-                    color: Color(0xFF00BFA5),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                item.appName.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                  letterSpacing: 0.8,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.notifications_off_outlined,
-                    color: Colors.white38, size: 14),
-                tooltip: "Mute app",
-                onPressed: () =>
-                    setState(() => _mutedApps.add(item.packageName)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded,
-                    color: Colors.white38, size: 16),
-                onPressed: () => _dismissNotificationOnDevice(item),
+              const Spacer(),
+
+              // Three-Dot ⋮ Context Menu
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded,
+                    color: Colors.white54, size: 16),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 140),
+                color: const Color(0xFF2A1F3B),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                onSelected: (choice) {
+                  if (choice == 'pin') {
+                    setState(() {
+                      if (isPinned) {
+                        _pinnedKeys.remove(key);
+                      } else {
+                        _pinnedKeys.add(key);
+                      }
+                    });
+                  } else if (choice == 'mute') {
+                    setState(() => _mutedApps.add(item.packageName));
+                  } else if (choice == 'mirror') {
+                    if (widget.onLaunchAppWindow != null) {
+                      widget.onLaunchAppWindow!(item.packageName, item.appName);
+                    } else {
+                      AppLauncherService.launchApp(item.packageName);
+                    }
+                  } else if (choice == 'dismiss') {
+                    _dismissNotificationOnDevice(item);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'pin',
+                    child: Row(
+                      children: [
+                        Icon(
+                            isPinned
+                                ? Icons.push_pin_outlined
+                                : Icons.push_pin_rounded,
+                            color: Colors.white70,
+                            size: 14),
+                        const SizedBox(width: 8),
+                        Text(
+                          isPinned ? "Unpin" : "Pin to Top",
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'mute',
+                    child: Row(
+                      children: [
+                        Icon(Icons.notifications_off_outlined,
+                            color: Colors.white70, size: 14),
+                        SizedBox(width: 8),
+                        Text("Mute App",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'mirror',
+                    child: Row(
+                      children: [
+                        Icon(Icons.open_in_new_rounded,
+                            color: Colors.white70, size: 14),
+                        SizedBox(width: 8),
+                        Text("Launch App",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'dismiss',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded,
+                            color: Colors.redAccent, size: 14),
+                        SizedBox(width: 8),
+                        Text("Dismiss",
+                            style: TextStyle(
+                                color: Colors.redAccent, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 6),
-
-          // Message Title & Body
-          Text(
-            item.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            item.body,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
           const SizedBox(height: 8),
 
-          // Notification Actions Buttons
+          // Main Content Area: Left Column (Text) + Right Column (Image Thumbnail)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Title + Body Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (item.subText.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subText,
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      item.body,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Right Column: Image Thumbnail (if present)
+              if (thumbnailProvider != null) ...[
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => _openImagePreviewDialog(context, thumbnailProvider!),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Image(
+                        image: thumbnailProvider,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.image_rounded,
+                              color: Colors.white38, size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Pill-Shaped Action Buttons Row matching reference image
           if (item.actions.isNotEmpty)
             Wrap(
-              spacing: 6,
+              spacing: 8,
+              runSpacing: 6,
               children: item.actions.map((actText) {
+                final isReplyBtn = actText.toLowerCase().contains('reply');
                 return InkWell(
                   onTap: () => _handleNotificationAction(item, actText),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      color: isReplyBtn
+                          ? Colors.white.withValues(alpha: 0.30)
+                          : Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       actText,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: isReplyBtn
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.90),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 );
               }).toList(),
             ),
 
-          // Direct Inline Reply Input Panel
+          // Direct Inline Reply Panel
           if (isReplying) ...[
             const SizedBox(height: 10),
             Row(

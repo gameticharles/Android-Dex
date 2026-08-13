@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
@@ -206,11 +207,11 @@ class DesktopShelfServer {
 
     try {
       _server = await io.serve(handler, InternetAddress.anyIPv4, port, shared: true);
-      print('Desktop Shelf Server listening on port ${_server?.port}');
+      debugPrint('Desktop Shelf Server listening on port ${_server?.port}');
     } catch (_) {
       // Fallback to random free port if 8080 is busy
       _server = await io.serve(handler, InternetAddress.anyIPv4, 0, shared: true);
-      print('Desktop Shelf Server listening on fallback port ${_server?.port}');
+      debugPrint('Desktop Shelf Server listening on fallback port ${_server?.port}');
     }
   }
 

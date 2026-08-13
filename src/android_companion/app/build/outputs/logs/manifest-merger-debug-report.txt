@@ -191,7 +191,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/charlesgameti/.gradle
 	android:supportsRtl
 		ADDED from /home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:41:9-35
 	android:label
-		ADDED from /home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-46
+		ADDED from /home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-36
 	android:roundIcon
 		ADDED from /home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:39:9-54
 	android:icon

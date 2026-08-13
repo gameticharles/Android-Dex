@@ -116,8 +116,8 @@
 57        android:extractNativeLibs="true"
 58        android:icon="@mipmap/ic_launcher"
 58-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:38:9-43
-59        android:label="Android Dex Companion"
-59-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-46
+59        android:label="Android DEX"
+59-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:40:9-36
 60        android:roundIcon="@mipmap/ic_launcher_round"
 60-->/home/charlesgameti/Documents/GitHub/Android-Dex/src/android_companion/app/src/main/AndroidManifest.xml:39:9-54
 61        android:supportsRtl="true"
